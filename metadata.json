@@ -1,0 +1,5 @@
+{
+  "name": "Insane Crypto Prompt Generator",
+  "description": "An interactive tool to build a comprehensive, expert-level research prompt for analyzing cryptocurrency projects, and leverage the Gemini API to get instant, in-depth analysis.",
+  "requestFramePermissions": []
+}
