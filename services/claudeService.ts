@@ -53,13 +53,12 @@ export async function runDeepAnalysis(prompt: string): Promise<AnalysisResult> {
 }
 
 /**
- * Runs a fast analysis using Claude Sonnet.
+ * Runs a fast analysis using Claude Sonnet 4.5.
  * This is optimized for speed while maintaining high quality.
- * Note: For web search integration, you can add a tool-use implementation here.
  * @param prompt The prompt for the analysis.
  * @returns A promise that resolves to an AnalysisResult.
  */
-export async function runGroundedAnalysis(prompt: string): Promise<AnalysisResult> {
+export async function runFastAnalysis(prompt: string): Promise<AnalysisResult> {
   const client = new Anthropic({ apiKey: getApiKey(), dangerouslyAllowBrowser: true });
 
   try {
@@ -100,6 +99,51 @@ If you need real-time data that's beyond your knowledge cutoff, please note that
     throw new Error(error instanceof Error ? error.message : "An unknown error occurred.");
   }
 }
+
+/**
+ * Runs analysis using Claude Sonnet 4.5 with extended thinking.
+ * Balances speed and deep reasoning - faster than Opus but with thinking capability.
+ * @param prompt The prompt for the analysis.
+ * @returns A promise that resolves to an AnalysisResult.
+ */
+export async function runSonnetThinkingAnalysis(prompt: string): Promise<AnalysisResult> {
+  const client = new Anthropic({ apiKey: getApiKey(), dangerouslyAllowBrowser: true });
+
+  try {
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 8000,
+      temperature: 1,
+      thinking: {
+        type: 'enabled',
+        budget_tokens: 5000
+      },
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    });
+
+    // Extract text from response
+    let text = '';
+    for (const block of response.content) {
+      if (block.type === 'text') {
+        text += block.text;
+      }
+    }
+
+    return { text, groundingChunks: [] };
+  } catch (error) {
+    console.error("Sonnet Thinking Analysis Claude API call failed:", error);
+    if (error instanceof Anthropic.APIError) {
+      throw new Error(`Claude API Error: ${error.message}`);
+    }
+    throw new Error(error instanceof Error ? error.message : "An unknown error occurred.");
+  }
+}
+
+// Keep backward compatibility with old function name
+export const runGroundedAnalysis = runFastAnalysis;
 
 /**
  * Chat service for interactive conversations with Claude
