@@ -8,6 +8,8 @@ import OutputDisplay from './components/OutputDisplay';
 import ChatBot from './components/ChatBot';
 import ProviderSelector from './components/ProviderSelector';
 import Settings from './components/Settings';
+import { TEMPLATES, getTemplateById } from './templates';
+import { generateGuardrailInstructions } from './guardrails';
 
 const App: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({});
@@ -22,6 +24,8 @@ const App: React.FC = () => {
   const [currentProvider, setCurrentProvider] = useState<AIProvider>('claude');
   const [providerAvailable, setProviderAvailable] = useState(true);
   const [providerMessage, setProviderMessage] = useState('');
+  const [guardrailsEnabled, setGuardrailsEnabled] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
 
   // Check provider availability when it changes
   useEffect(() => {
@@ -36,9 +40,28 @@ const App: React.FC = () => {
     setProviderMessage(result.message);
   };
 
-  const handleSettingsChange = () => {
+  const handleSettingsChange = (newGuardrailsEnabled?: boolean) => {
     // Recheck provider availability when settings change
     checkProviderAvailability();
+    // Update guardrails if changed
+    if (newGuardrailsEnabled !== undefined) {
+      setGuardrailsEnabled(newGuardrailsEnabled);
+    }
+  };
+
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    if (!templateId) return;
+
+    const template = getTemplateById(templateId);
+    if (template) {
+      setFormData(template.formData);
+      // Clear any existing output when loading a template
+      setGeneratedPrompt('');
+      setGeminiResponse('');
+      setGroundingChunks([]);
+      setError('');
+    }
   };
 
   const handleInputChange = useCallback((section: string, field: string, value: string | boolean | string[]) => {
@@ -73,7 +96,14 @@ const App: React.FC = () => {
   };
 
   const handleGeneratePrompt = () => {
-    const promptText = generatePromptText();
+    let promptText = generatePromptText();
+
+    // Append guardrails if enabled
+    if (guardrailsEnabled) {
+      const guardrailInstructions = generateGuardrailInstructions(currentProvider, true);
+      promptText += guardrailInstructions;
+    }
+
     setGeneratedPrompt(promptText);
     setGeminiResponse('');
     setGroundingChunks([]);
@@ -203,6 +233,28 @@ const App: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column: Form */}
           <div className="flex flex-col space-y-4">
+             {/* Template Selector */}
+             <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+                <h2 className="text-xl font-bold mb-3 text-purple-400">Quick Start Templates</h2>
+                <select
+                  value={selectedTemplate}
+                  onChange={(e) => handleTemplateChange(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">-- Select a Template --</option>
+                  {TEMPLATES.map(template => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedTemplate && (
+                  <p className="mt-2 text-sm text-gray-400">
+                    {TEMPLATES.find(t => t.id === selectedTemplate)?.description}
+                  </p>
+                )}
+             </div>
+
              {sections.map(section => (
               <Accordion key={section.id} title={section.title}>
                 <div className="space-y-4">
@@ -289,6 +341,8 @@ const App: React.FC = () => {
         <Settings
           onClose={() => setIsSettingsOpen(false)}
           onSettingsChange={handleSettingsChange}
+          guardrailsEnabled={guardrailsEnabled}
+          currentProvider={currentProvider}
         />
       )}
     </div>
