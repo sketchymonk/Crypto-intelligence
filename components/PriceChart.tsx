@@ -10,6 +10,8 @@ interface PriceChartProps {
 
 const PriceChart: React.FC<PriceChartProps> = ({ data, width = 800, height = 300, showExpandButton = true }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number; price: number; timestamp: number } | null>(null);
+  const svgRef = React.useRef<SVGSVGElement>(null);
 
   if (!data || data.length === 0) {
     return (
@@ -25,7 +27,10 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, width = 800, height = 300
     return `$${price.toFixed(8)}`;
   };
 
-  const ChartContent = ({ w, h }: { w: number; h: number }) => {
+  const ChartContent = ({ w, h, isExpandedView = false }: { w: number; h: number; isExpandedView?: boolean }) => {
+    const localSvgRef = React.useRef<SVGSVGElement>(null);
+    const [localHoverPoint, setLocalHoverPoint] = useState<{ x: number; y: number; price: number; timestamp: number } | null>(null);
+
     const chartDataForSize = useMemo(() => {
       if (!data || data.length === 0) return null;
 
@@ -84,6 +89,42 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, width = 800, height = 300
 
     if (!chartDataForSize) return null;
 
+    const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+      if (!localSvgRef.current) return;
+
+      const rect = localSvgRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const scaleX = w / rect.width;
+      const actualX = x * scaleX;
+
+      // Find closest point
+      const closestPoint = chartDataForSize.points.reduce((prev, curr) => {
+        return Math.abs(curr.x - actualX) < Math.abs(prev.x - actualX) ? curr : prev;
+      });
+
+      setLocalHoverPoint(closestPoint);
+    };
+
+    const handleMouseLeave = () => {
+      setLocalHoverPoint(null);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
+      if (!localSvgRef.current || e.touches.length === 0) return;
+
+      const rect = localSvgRef.current.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = touch.clientX - rect.left;
+      const scaleX = w / rect.width;
+      const actualX = x * scaleX;
+
+      const closestPoint = chartDataForSize.points.reduce((prev, curr) => {
+        return Math.abs(curr.x - actualX) < Math.abs(prev.x - actualX) ? curr : prev;
+      });
+
+      setLocalHoverPoint(closestPoint);
+    };
+
     return (
       <>
         {/* Price change indicator */}
@@ -93,12 +134,40 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, width = 800, height = 300
           {chartDataForSize.isPositive ? '↑' : '↓'} {Math.abs(chartDataForSize.priceChange).toFixed(2)}%
         </div>
 
+        {/* Hover tooltip */}
+        {localHoverPoint && (
+          <div
+            className="absolute bg-gray-900 border border-gray-700 text-white px-3 py-2 rounded text-xs shadow-lg z-20 pointer-events-none"
+            style={{
+              left: `${(localHoverPoint.x / w) * 100}%`,
+              top: `${(localHoverPoint.y / h) * 100}%`,
+              transform: 'translate(-50%, -120%)'
+            }}
+          >
+            <div className="font-bold">{formatPrice(localHoverPoint.price)}</div>
+            <div className="text-gray-400 text-[10px]">
+              {new Date(localHoverPoint.timestamp).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </div>
+          </div>
+        )}
+
         <svg
+          ref={localSvgRef}
           width={w}
           height={h}
           viewBox={`0 0 ${w} ${h}`}
           preserveAspectRatio="xMidYMid meet"
-          className="w-full h-auto"
+          className="w-full h-auto cursor-crosshair"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleMouseLeave}
         >
           {/* Grid lines */}
           <g>
@@ -191,6 +260,43 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, width = 800, height = 300
             stroke="#4b5563"
             strokeWidth="2"
           />
+
+          {/* Crosshair */}
+          {localHoverPoint && (
+            <g>
+              {/* Vertical line */}
+              <line
+                x1={localHoverPoint.x}
+                y1={chartDataForSize.padding.top}
+                x2={localHoverPoint.x}
+                y2={h - chartDataForSize.padding.bottom}
+                stroke="#8b5cf6"
+                strokeWidth="1"
+                strokeDasharray="4 4"
+                opacity="0.7"
+              />
+              {/* Horizontal line */}
+              <line
+                x1={chartDataForSize.padding.left}
+                y1={localHoverPoint.y}
+                x2={w - chartDataForSize.padding.right}
+                y2={localHoverPoint.y}
+                stroke="#8b5cf6"
+                strokeWidth="1"
+                strokeDasharray="4 4"
+                opacity="0.7"
+              />
+              {/* Point highlight */}
+              <circle
+                cx={localHoverPoint.x}
+                cy={localHoverPoint.y}
+                r="6"
+                fill="#8b5cf6"
+                stroke="white"
+                strokeWidth="2"
+              />
+            </g>
+          )}
         </svg>
 
         {/* Legend */}
@@ -241,7 +347,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, width = 800, height = 300
               <div className="w-full" style={{ maxHeight: 'calc(90vh - 100px)' }}>
                 <h3 className="text-xl font-bold text-white mb-4">Price Chart - Expanded View</h3>
                 <div className="relative">
-                  <ChartContent w={1200} h={600} />
+                  <ChartContent w={1200} h={600} isExpandedView={true} />
                 </div>
               </div>
             </div>
