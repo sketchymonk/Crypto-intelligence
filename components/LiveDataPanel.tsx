@@ -17,7 +17,7 @@ const LiveDataPanel: React.FC<LiveDataPanelProps> = ({ coinId: initialCoinId, on
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Array<{ id: string; symbol: string; name: string }>>([]);
   const [showSearch, setShowSearch] = useState(false);
-  const [chartDays, setChartDays] = useState(30);
+  const [chartDays, setChartDays] = useState<number | 'max'>(30);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [chartLoading, setChartLoading] = useState(false);
 
@@ -281,14 +281,14 @@ const LiveDataPanel: React.FC<LiveDataPanelProps> = ({ coinId: initialCoinId, on
             <div className="flex justify-between items-center mb-3">
               <h4 className="font-bold text-white">Price Chart</h4>
               <div className="flex gap-1">
-                {[7, 30, 90, 365].map(days => (
+                {[7, 30, 90, 365, 'max'].map(days => (
                   <button
                     key={days}
                     onClick={async () => {
-                      setChartDays(days);
+                      setChartDays(days as number | 'max');
                       setChartLoading(true);
                       try {
-                        const data = await coinGeckoService.getChartData(coinId, days);
+                        const data = await coinGeckoService.getChartData(coinId, days === 'max' ? 'max' : days as number);
                         setChartData(data);
                       } catch (err) {
                         console.error('Failed to load chart data:', err);
@@ -303,7 +303,7 @@ const LiveDataPanel: React.FC<LiveDataPanelProps> = ({ coinId: initialCoinId, on
                         : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
                     } ${chartLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {days}d
+                    {days === 'max' ? 'All' : `${days}d`}
                   </button>
                 ))}
               </div>

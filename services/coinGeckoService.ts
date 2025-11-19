@@ -101,7 +101,7 @@ class CoinGeckoService {
   /**
    * Get historical price chart data
    */
-  async getChartData(coinId: string, days: number = 30): Promise<ChartDataPoint[]> {
+  async getChartData(coinId: string, days: number | 'max' = 30): Promise<ChartDataPoint[]> {
     const cacheKey = `chart_${coinId}_${days}`;
     const cached = this.getFromCache<ChartDataPoint[]>(cacheKey);
     if (cached) return cached;
