@@ -36,7 +36,7 @@ export interface ChatMessage {
 }
 
 // AI Provider Types
-export type AIProvider = 'claude' | 'gemini' | 'ollama';
+export type AIProvider = 'claude' | 'gemini' | 'ollama' | 'openrouter' | 'groq' | 'mistral';
 
 export interface ProviderConfig {
     provider: AIProvider;
