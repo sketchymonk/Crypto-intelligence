@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { sections } from './constants';
-import { FormData, GroundingChunk, AIProvider } from './types';
+import { FormData, GroundingChunk, AIProvider, SavedAnalysis } from './types';
 import Accordion from './components/Accordion';
 import { TextInput, TextArea, SelectInput, CheckboxGroup } from './components/FormElements';
 import { getProviderManager } from './services/aiProvider';
@@ -9,8 +9,12 @@ import ChatBot from './components/ChatBot';
 import ProviderSelector from './components/ProviderSelector';
 import Settings from './components/Settings';
 import SavedPrompts from './components/SavedPrompts';
+import AnalysisHistory from './components/AnalysisHistory';
+import ComparisonView from './components/ComparisonView';
+import LiveDataPanel from './components/LiveDataPanel';
 import { TEMPLATES, getTemplateById } from './templates';
 import { generateGuardrailInstructions } from './guardrails';
+import { analysisHistoryService } from './services/analysisHistory';
 
 const App: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({});
@@ -22,12 +26,20 @@ const App: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavedPromptsOpen, setIsSavedPromptsOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+  const [comparisonAnalyses, setComparisonAnalyses] = useState<SavedAnalysis[]>([]);
+  const [showLiveData, setShowLiveData] = useState(false);
+  const [selectedCoinId, setSelectedCoinId] = useState<string>('');
   const [error, setError] = useState('');
   const [currentProvider, setCurrentProvider] = useState<AIProvider>('claude');
   const [providerAvailable, setProviderAvailable] = useState(true);
   const [providerMessage, setProviderMessage] = useState('');
   const [guardrailsEnabled, setGuardrailsEnabled] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [currentAnalysisId, setCurrentAnalysisId] = useState<string>('');
+  const [projectName, setProjectName] = useState<string>('');
+  const [projectSymbol, setProjectSymbol] = useState<string>('');
 
   // Check provider availability when it changes
   useEffect(() => {
@@ -74,6 +86,25 @@ const App: React.FC = () => {
     setGeminiResponse('');
     setGroundingChunks([]);
     setError('');
+  };
+
+  const handleLoadAnalysis = (loadedFormData: FormData, analysis: SavedAnalysis) => {
+    setFormData(loadedFormData);
+    setGeneratedPrompt(analysis.prompt);
+    setGeminiResponse(analysis.response);
+    setGroundingChunks(analysis.groundingChunks || []);
+    setProjectName(analysis.projectName);
+    setProjectSymbol(analysis.projectSymbol || '');
+    setSelectedCoinId(analysis.coinGeckoId || '');
+    setCurrentAnalysisId(analysis.id);
+    setIsHistoryOpen(false);
+    setError('');
+  };
+
+  const handleCompareAnalyses = (analyses: SavedAnalysis[]) => {
+    setComparisonAnalyses(analyses);
+    setIsHistoryOpen(false);
+    setIsComparisonOpen(true);
   };
 
   const handleInputChange = useCallback((section: string, field: string, value: string | boolean | string[]) => {
@@ -149,12 +180,38 @@ const App: React.FC = () => {
       if (response.groundingChunks) {
         setGroundingChunks(response.groundingChunks);
       }
+
+      // Auto-save analysis to history
+      const savedAnalysis = analysisHistoryService.save({
+        projectName: projectName || 'Untitled Project',
+        projectSymbol: projectSymbol,
+        formData: formData,
+        prompt: generatedPrompt,
+        response: response.text,
+        analysisType: type,
+        provider: currentProvider,
+        groundingChunks: response.groundingChunks,
+        coinGeckoId: selectedCoinId
+      });
+
+      setCurrentAnalysisId(savedAnalysis.id);
+
+      // Show success toast
+      showToast('Analysis saved to history!');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
     } finally {
       setIsLoading(false);
       setActiveAnalysis(null);
     }
+  };
+
+  const showToast = (message: string) => {
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 left-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
   };
 
   const handleProviderChange = (provider: AIProvider) => {
@@ -212,6 +269,26 @@ const App: React.FC = () => {
             </div>
             <div className="ml-4 flex gap-2">
               <button
+                onClick={() => setShowLiveData(!showLiveData)}
+                className={`${showLiveData ? 'bg-purple-600' : 'bg-gray-800'} hover:bg-purple-700 text-gray-300 p-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                aria-label="Live Data"
+                title="Live Market Data"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setIsHistoryOpen(true)}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-300 p-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                aria-label="Analysis History"
+                title="Analysis History"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              <button
                 onClick={() => setIsSavedPromptsOpen(true)}
                 className="bg-gray-800 hover:bg-gray-700 text-gray-300 p-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
                 aria-label="Saved Prompts"
@@ -257,6 +334,33 @@ const App: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column: Form */}
           <div className="flex flex-col space-y-4">
+             {/* Project Info */}
+             <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+                <h2 className="text-xl font-bold mb-3 text-purple-400">Project Info</h2>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Project Name *</label>
+                    <input
+                      type="text"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      placeholder="e.g., Ethereum, Uniswap"
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Symbol (Optional)</label>
+                    <input
+                      type="text"
+                      value={projectSymbol}
+                      onChange={(e) => setProjectSymbol(e.target.value.toUpperCase())}
+                      placeholder="e.g., ETH, UNI"
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+             </div>
+
              {/* Template Selector */}
              <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
                 <h2 className="text-xl font-bold mb-3 text-purple-400">Quick Start Templates</h2>
@@ -294,6 +398,14 @@ const App: React.FC = () => {
 
           {/* Right Column: Output */}
           <div className="flex flex-col space-y-4 sticky top-8 self-start">
+             {/* Live Data Panel (Toggleable) */}
+             {showLiveData && (
+               <LiveDataPanel
+                 coinId={selectedCoinId || 'bitcoin'}
+                 onCoinChange={setSelectedCoinId}
+               />
+             )}
+
              <ProviderSelector onProviderChange={handleProviderChange} />
 
              <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
@@ -374,6 +486,19 @@ const App: React.FC = () => {
           onClose={() => setIsSavedPromptsOpen(false)}
           onLoad={handleLoadSavedPrompt}
           currentFormData={formData}
+        />
+      )}
+      {isHistoryOpen && (
+        <AnalysisHistory
+          onClose={() => setIsHistoryOpen(false)}
+          onLoad={handleLoadAnalysis}
+          onCompare={handleCompareAnalyses}
+        />
+      )}
+      {isComparisonOpen && (
+        <ComparisonView
+          analyses={comparisonAnalyses}
+          onClose={() => setIsComparisonOpen(false)}
         />
       )}
     </div>
