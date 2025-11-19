@@ -10,6 +10,12 @@ import { marked } from 'marked';
  * Parse and format markdown content with professional styling
  */
 function parseMarkdown(markdown: string): string {
+  // Remove duplicate "Analysis Date:" line at the start (already in metadata bar)
+  let cleanedMarkdown = markdown.replace(/^Analysis Date:\s*[^\n]+\n+/i, '');
+
+  // Convert key metrics sections to professional tables
+  cleanedMarkdown = convertKeyMetricsToTable(cleanedMarkdown);
+
   // Configure marked for better output
   marked.setOptions({
     gfm: true,
@@ -18,7 +24,7 @@ function parseMarkdown(markdown: string): string {
   });
 
   // Parse markdown to HTML
-  let html = marked.parse(markdown) as string;
+  let html = marked.parse(cleanedMarkdown) as string;
 
   // Enhance tables
   html = html.replace(/<table>/g, '<table class="data-table">');
@@ -42,6 +48,73 @@ function parseMarkdown(markdown: string): string {
   html = html.replace(/<strong>(.*?)<\/strong>/g, '<strong class="highlight">$1</strong>');
 
   return html;
+}
+
+/**
+ * Convert key metrics sections to professional HTML tables
+ */
+function convertKeyMetricsToTable(markdown: string): string {
+  // Pattern to match Key Metrics sections with bullet points
+  const keyMetricsPattern = /#{1,3}\s*(?:Key Metrics|Current Metrics|Market Metrics|Price Metrics|Token Metrics)[\s\S]*?\n((?:[-*]\s+\*\*[^*]+\*\*:[^\n]+\n?)+)/gi;
+
+  markdown = markdown.replace(keyMetricsPattern, (match, metricsContent) => {
+    // Extract individual metrics
+    const metricLines = metricsContent.match(/[-*]\s+\*\*([^*]+)\*\*:\s*([^\n]+)/g);
+
+    if (!metricLines || metricLines.length === 0) {
+      return match; // Return original if no metrics found
+    }
+
+    // Build table rows
+    let tableRows = '';
+    metricLines.forEach((line: string) => {
+      const metricMatch = line.match(/[-*]\s+\*\*([^*]+)\*\*:\s*([^\n]+)/);
+      if (metricMatch) {
+        const label = metricMatch[1].trim();
+        const value = metricMatch[2].trim();
+        tableRows += `| ${label} | ${value} |\n`;
+      }
+    });
+
+    // Get the header line
+    const headerMatch = match.match(/(#{1,3}\s*(?:Key Metrics|Current Metrics|Market Metrics|Price Metrics|Token Metrics)[^\n]*)/i);
+    const header = headerMatch ? headerMatch[1] : '### Key Metrics';
+
+    // Return formatted table
+    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
+  });
+
+  // Also handle "Dashboard" style metrics with colon format
+  const dashboardPattern = /#{1,3}\s*(?:Dashboard|Live Data|Market Data)[\s\S]*?\n((?:[-*]\s+[^:]+:[^\n]+\n?){3,})/gi;
+
+  markdown = markdown.replace(dashboardPattern, (match, metricsContent) => {
+    // Extract individual metrics
+    const metricLines = metricsContent.match(/[-*]\s+([^:]+):\s*([^\n]+)/g);
+
+    if (!metricLines || metricLines.length === 0) {
+      return match;
+    }
+
+    // Build table rows
+    let tableRows = '';
+    metricLines.forEach((line: string) => {
+      const metricMatch = line.match(/[-*]\s+([^:]+):\s*([^\n]+)/);
+      if (metricMatch) {
+        const label = metricMatch[1].trim().replace(/\*\*/g, ''); // Remove any bold markers
+        const value = metricMatch[2].trim();
+        tableRows += `| ${label} | ${value} |\n`;
+      }
+    });
+
+    // Get the header line
+    const headerMatch = match.match(/(#{1,3}\s*(?:Dashboard|Live Data|Market Data)[^\n]*)/i);
+    const header = headerMatch ? headerMatch[1] : '### Market Data';
+
+    // Return formatted table
+    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
+  });
+
+  return markdown;
 }
 
 /**
