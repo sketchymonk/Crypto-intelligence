@@ -46,6 +46,55 @@ const App: React.FC = () => {
     checkProviderAvailability();
   }, [currentProvider]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Enter: Run balanced analysis
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (generatedPrompt && !isLoading) {
+          handleSubmitToAI('balanced');
+        }
+      }
+
+      // Escape: Close modals
+      if (e.key === 'Escape') {
+        if (isChatOpen) setIsChatOpen(false);
+        if (isSettingsOpen) setIsSettingsOpen(false);
+        if (isSavedPromptsOpen) setIsSavedPromptsOpen(false);
+        if (isHistoryOpen) setIsHistoryOpen(false);
+        if (isComparisonOpen) setIsComparisonOpen(false);
+      }
+
+      // Ctrl/Cmd + G: Generate prompt
+      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+        e.preventDefault();
+        handleGeneratePrompt();
+      }
+
+      // Ctrl/Cmd + H: Open history
+      if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+        e.preventDefault();
+        setIsHistoryOpen(true);
+      }
+
+      // Ctrl/Cmd + S: Open saved prompts
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        setIsSavedPromptsOpen(true);
+      }
+
+      // Ctrl/Cmd + ,: Open settings
+      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault();
+        setIsSettingsOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [generatedPrompt, isLoading, isChatOpen, isSettingsOpen, isSavedPromptsOpen, isHistoryOpen, isComparisonOpen]);
+
   const checkProviderAvailability = async () => {
     const providerManager = getProviderManager();
     providerManager.setProvider(currentProvider);
@@ -410,10 +459,14 @@ const App: React.FC = () => {
 
              <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
                 <h2 className="text-xl font-bold mb-4 text-purple-400">Actions</h2>
+                <div className="text-xs text-gray-500 mb-3">
+                  ⌨️ Shortcuts: <span className="font-mono">Ctrl+G</span> Generate • <span className="font-mono">Ctrl+Enter</span> Analyze • <span className="font-mono">Esc</span> Close • <span className="font-mono">Ctrl+H</span> History
+                </div>
                  <div className="flex flex-col gap-4">
                     <button
                         onClick={handleGeneratePrompt}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                        title="Keyboard shortcut: Ctrl+G"
                       >
                         1. Generate Prompt
                     </button>

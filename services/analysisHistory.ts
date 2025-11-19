@@ -220,6 +220,60 @@ class AnalysisHistoryService {
       newestDate: new Date(Math.max(...timestamps))
     };
   }
+
+  /**
+   * Toggle favorite status
+   */
+  toggleFavorite(id: string): boolean {
+    const analysis = this.getById(id);
+    if (!analysis) return false;
+
+    const newFavoriteStatus = !analysis.favorite;
+    this.update(id, { favorite: newFavoriteStatus });
+    return newFavoriteStatus;
+  }
+
+  /**
+   * Get all favorite analyses
+   */
+  getFavorites(): SavedAnalysis[] {
+    const all = this.getAll();
+    return all.filter(a => a.favorite);
+  }
+
+  /**
+   * Add or update notes for an analysis
+   */
+  updateNotes(id: string, notes: string): boolean {
+    const updated = this.update(id, { notes });
+    return !!updated;
+  }
+
+  /**
+   * Add tags to an analysis
+   */
+  addTags(id: string, newTags: string[]): boolean {
+    const analysis = this.getById(id);
+    if (!analysis) return false;
+
+    const existingTags = analysis.tags || [];
+    const uniqueTags = Array.from(new Set([...existingTags, ...newTags]));
+    this.update(id, { tags: uniqueTags });
+    return true;
+  }
+
+  /**
+   * Remove tags from an analysis
+   */
+  removeTags(id: string, tagsToRemove: string[]): boolean {
+    const analysis = this.getById(id);
+    if (!analysis) return false;
+
+    const existingTags = analysis.tags || [];
+    const filteredTags = existingTags.filter(tag => !tagsToRemove.includes(tag));
+    this.update(id, { tags: filteredTags });
+    return true;
+  }
 }
 
 // Export singleton instance

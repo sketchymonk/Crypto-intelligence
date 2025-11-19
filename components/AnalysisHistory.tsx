@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { SavedAnalysis, FormData } from '../types';
 import { analysisHistoryService } from '../services/analysisHistory';
+import { downloadAsHTML, exportAsPDF, copyToClipboard } from '../utils/exportUtils';
+import { aiTaggingService } from '../services/aiTagging';
 
 interface AnalysisHistoryProps {
   onClose: () => void;
@@ -15,8 +17,12 @@ const AnalysisHistory: React.FC<AnalysisHistoryProps> = ({ onClose, onLoad, onCo
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [selectedForComparison, setSelectedForComparison] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [sortBy, setSortBy] = useState<'date' | 'project'>('date');
+  const [sortBy, setSortBy] = useState<'date' | 'project' | 'favorite'>('date');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
+  const [notesText, setNotesText] = useState('');
+  const [generatingTags, setGeneratingTags] = useState<Set<string>>(new Set());
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   const allTags = analysisHistoryService.getAllTags();
   const allProjects = analysisHistoryService.getAllProjects();
@@ -27,7 +33,7 @@ const AnalysisHistory: React.FC<AnalysisHistoryProps> = ({ onClose, onLoad, onCo
 
   useEffect(() => {
     applyFilters();
-  }, [searchQuery, selectedTag, sortBy, analyses]);
+  }, [searchQuery, selectedTag, sortBy, analyses, showFavoritesOnly]);
 
   const loadAnalyses = () => {
     const all = analysisHistoryService.getAll();
@@ -36,6 +42,11 @@ const AnalysisHistory: React.FC<AnalysisHistoryProps> = ({ onClose, onLoad, onCo
 
   const applyFilters = () => {
     let filtered = [...analyses];
+
+    // Favorites filter
+    if (showFavoritesOnly) {
+      filtered = filtered.filter(a => a.favorite);
+    }
 
     // Search filter
     if (searchQuery) {
@@ -50,6 +61,12 @@ const AnalysisHistory: React.FC<AnalysisHistoryProps> = ({ onClose, onLoad, onCo
     // Sort
     if (sortBy === 'project') {
       filtered.sort((a, b) => a.projectName.localeCompare(b.projectName));
+    } else if (sortBy === 'favorite') {
+      filtered.sort((a, b) => {
+        if (a.favorite && !b.favorite) return -1;
+        if (!a.favorite && b.favorite) return 1;
+        return b.timestamp - a.timestamp;
+      });
     } else {
       filtered.sort((a, b) => b.timestamp - a.timestamp);
     }
@@ -121,6 +138,81 @@ const AnalysisHistory: React.FC<AnalysisHistoryProps> = ({ onClose, onLoad, onCo
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleToggleFavorite = (id: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    analysisHistoryService.toggleFavorite(id);
+    loadAnalyses();
+  };
+
+  const handleGenerateTags = async (analysis: SavedAnalysis, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setGeneratingTags(prev => new Set(prev).add(analysis.id));
+
+    try {
+      const tags = await aiTaggingService.generateTags(analysis);
+      analysisHistoryService.addTags(analysis.id, tags);
+      loadAnalyses();
+      showToast(`Generated ${tags.length} tags!`);
+    } catch (error) {
+      console.error('Failed to generate tags:', error);
+      showToast('Failed to generate tags', true);
+    } finally {
+      setGeneratingTags(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(analysis.id);
+        return newSet;
+      });
+    }
+  };
+
+  const handleEditNotes = (analysis: SavedAnalysis, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setEditingNotesId(analysis.id);
+    setNotesText(analysis.notes || '');
+  };
+
+  const handleSaveNotes = (id: string) => {
+    analysisHistoryService.updateNotes(id, notesText);
+    setEditingNotesId(null);
+    setNotesText('');
+    loadAnalyses();
+    showToast('Notes saved!');
+  };
+
+  const handleCancelEditNotes = () => {
+    setEditingNotesId(null);
+    setNotesText('');
+  };
+
+  const handleExportAnalysis = (analysis: SavedAnalysis, format: 'html' | 'pdf', event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (format === 'html') {
+      downloadAsHTML(analysis);
+      showToast('Analysis exported as HTML!');
+    } else {
+      exportAsPDF(analysis);
+      showToast('Opening print dialog...');
+    }
+  };
+
+  const handleCopyAnalysis = async (analysis: SavedAnalysis, event: React.MouseEvent) => {
+    event.stopPropagation();
+    const success = await copyToClipboard(analysis.response);
+    if (success) {
+      showToast('Analysis copied to clipboard!');
+    } else {
+      showToast('Failed to copy', true);
+    }
+  };
+
+  const showToast = (message: string, isError = false) => {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 ${isError ? 'bg-red-600' : 'bg-green-600'} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
   };
 
   const formatDate = (timestamp: number) => {
@@ -212,12 +304,25 @@ const AnalysisHistory: React.FC<AnalysisHistoryProps> = ({ onClose, onLoad, onCo
 
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'date' | 'project')}
+              onChange={(e) => setSortBy(e.target.value as 'date' | 'project' | 'favorite')}
               className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="date">Sort by Date</option>
+              <option value="favorite">Sort by Favorites</option>
               <option value="project">Sort by Project</option>
             </select>
+
+            <button
+              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                showFavoritesOnly
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-gray-700 text-white hover:bg-gray-600'
+              }`}
+              title={showFavoritesOnly ? 'Show all' : 'Show favorites only'}
+            >
+              ⭐ {showFavoritesOnly ? 'Favorites' : 'All'}
+            </button>
 
             <button
               onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
@@ -292,7 +397,16 @@ const AnalysisHistory: React.FC<AnalysisHistoryProps> = ({ onClose, onLoad, onCo
                   {/* Header */}
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
-                      <h3 className="font-bold text-white text-lg">{analysis.projectName}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-white text-lg">{analysis.projectName}</h3>
+                        <button
+                          onClick={(e) => handleToggleFavorite(analysis.id, e)}
+                          className="text-2xl hover:scale-110 transition-transform"
+                          title={analysis.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                        >
+                          {analysis.favorite ? '⭐' : '☆'}
+                        </button>
+                      </div>
                       {analysis.projectSymbol && (
                         <p className="text-gray-400 text-sm">{analysis.projectSymbol.toUpperCase()}</p>
                       )}
@@ -322,13 +436,50 @@ const AnalysisHistory: React.FC<AnalysisHistoryProps> = ({ onClose, onLoad, onCo
                   </div>
 
                   {/* Tags */}
-                  {analysis.tags && analysis.tags.length > 0 && (
-                    <div className="flex gap-1 flex-wrap mb-3">
-                      {analysis.tags.map(tag => (
-                        <span key={tag} className="text-xs px-2 py-1 rounded bg-blue-900 text-blue-200">
-                          #{tag}
-                        </span>
-                      ))}
+                  <div className="flex gap-1 flex-wrap mb-3 items-center">
+                    {analysis.tags && analysis.tags.length > 0 && analysis.tags.map(tag => (
+                      <span key={tag} className="text-xs px-2 py-1 rounded bg-blue-900 text-blue-200">
+                        #{tag}
+                      </span>
+                    ))}
+                    <button
+                      onClick={(e) => handleGenerateTags(analysis, e)}
+                      disabled={generatingTags.has(analysis.id)}
+                      className="text-xs px-2 py-1 rounded bg-purple-900 text-purple-200 hover:bg-purple-800 disabled:opacity-50 transition"
+                      title="Generate AI tags"
+                    >
+                      {generatingTags.has(analysis.id) ? '...' : '+ AI Tags'}
+                    </button>
+                  </div>
+
+                  {/* Notes */}
+                  {editingNotesId === analysis.id ? (
+                    <div className="mb-3 bg-gray-800 p-2 rounded">
+                      <textarea
+                        value={notesText}
+                        onChange={(e) => setNotesText(e.target.value)}
+                        placeholder="Add notes..."
+                        className="w-full bg-gray-700 text-white p-2 rounded text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        rows={3}
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => handleSaveNotes(analysis.id)}
+                          className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-white text-xs transition"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancelEditNotes}
+                          className="bg-gray-600 hover:bg-gray-500 px-3 py-1 rounded text-white text-xs transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : analysis.notes && (
+                    <div className="mb-3 bg-yellow-900 bg-opacity-20 border-l-2 border-yellow-600 p-2 rounded text-sm text-gray-300">
+                      📝 {analysis.notes}
                     </div>
                   )}
 
@@ -354,10 +505,43 @@ const AnalysisHistory: React.FC<AnalysisHistoryProps> = ({ onClose, onLoad, onCo
                       {expandedId === analysis.id ? 'Hide' : 'Preview'}
                     </button>
                     <button
-                      onClick={() => handleDelete(analysis.id)}
-                      className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded text-white text-sm font-medium transition"
+                      onClick={(e) => handleEditNotes(analysis, e)}
+                      className="bg-yellow-600 hover:bg-yellow-700 px-3 py-2 rounded text-white text-sm font-medium transition"
+                      title="Edit notes"
                     >
-                      Delete
+                      📝
+                    </button>
+                  </div>
+
+                  {/* Secondary Actions */}
+                  <div className="flex gap-2 flex-wrap mt-2">
+                    <button
+                      onClick={(e) => handleCopyAnalysis(analysis, e)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-white text-xs transition"
+                      title="Copy to clipboard"
+                    >
+                      📋 Copy
+                    </button>
+                    <button
+                      onClick={(e) => handleExportAnalysis(analysis, 'html', e)}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 px-2 py-1 rounded text-white text-xs transition"
+                      title="Export as HTML"
+                    >
+                      📄 HTML
+                    </button>
+                    <button
+                      onClick={(e) => handleExportAnalysis(analysis, 'pdf', e)}
+                      className="flex-1 bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-white text-xs transition"
+                      title="Export as PDF"
+                    >
+                      📑 PDF
+                    </button>
+                    <button
+                      onClick={() => handleDelete(analysis.id)}
+                      className="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-white text-xs transition"
+                      title="Delete"
+                    >
+                      🗑️
                     </button>
                   </div>
                 </div>

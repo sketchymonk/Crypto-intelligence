@@ -8,7 +8,7 @@ export interface Template {
   id: string;
   name: string;
   description: string;
-  category: 'defi' | 'l1' | 'token' | 'security' | 'trading';
+  category: 'defi' | 'l1' | 'token' | 'security' | 'trading' | 'risk';
   formData: FormData;
 }
 
@@ -602,6 +602,49 @@ export const TEMPLATES: Template[] = [
         modules: ['technical', 'onChain', 'marketStructure', 'social']
       }
     }
+  },
+  {
+    id: 'comprehensive-risk',
+    name: '🚨 Comprehensive Risk Assessment',
+    description: 'Dedicated risk analysis covering smart contracts, regulatory, market, team, and systemic risks',
+    category: 'risk',
+    formData: {
+      context: {
+        experts: ['Security Auditor', 'Regulatory Counsel', 'On-Chain/Data Engineer', 'Macro Strategist'],
+        purpose: 'Risk memo',
+        actionability: 'Strategic',
+        priorKnowledge: 'Project overview and basic mechanisms',
+        gaps: 'All potential risk vectors: technical, regulatory, market, operational, systemic'
+      },
+      coreQuestion: {
+        primaryQuestion: 'What are ALL the risks associated with this crypto project, quantified and prioritized?',
+        hypothesis: 'Project has identifiable and manageable risks with proper mitigation strategies',
+        counterfactuals: 'Best case: Minimal risks, strong safeguards. Worst case: Critical vulnerabilities, regulatory action, team issues'
+      },
+      specifications: {
+        timePeriod: 'All-time + forward 12 months',
+        geographicLocation: 'Global',
+        sectorFocus: ['DeFi', 'L1', 'L2', 'Infrastructure'],
+        demographicFocus: ['Retail', 'Institutional'],
+        methodology: ['Fundamental Analysis', 'Event-Driven Analysis', 'Sentiment Analysis', 'On-chain Quant Analysis'],
+        ethics: 'FOCUS ON RED FLAGS: Rug pull indicators, centralization, anonymous teams, unaudited code, ponzi mechanics, regulatory violations'
+      },
+      output: {
+        executiveSummary: 'Yes',
+        depth: 'Level 3',
+        contentElements: ['caseStudies', 'implications', 'alphaSignals'],
+        visualizations: [],
+        targetLength: '2,500-4,000 words',
+        citationStyle: 'Inline links'
+      },
+      format: {
+        writingFormat: 'Investment Memo',
+        writingPerspective: 'Third-person'
+      },
+      cryptoModules: {
+        modules: ['security', 'governance', 'tokenomics', 'onChain', 'marketStructure', 'newsflow']
+      }
+    }
   }
 ];
 
@@ -628,10 +671,12 @@ export function getTemplateCategories(): Array<{ value: Template['category']; la
     l1: TEMPLATES.filter(t => t.category === 'l1').length,
     token: TEMPLATES.filter(t => t.category === 'token').length,
     security: TEMPLATES.filter(t => t.category === 'security').length,
-    trading: TEMPLATES.filter(t => t.category === 'trading').length
+    trading: TEMPLATES.filter(t => t.category === 'trading').length,
+    risk: TEMPLATES.filter(t => t.category === 'risk').length
   };
 
   return [
+    { value: 'risk', label: '🚨 Risk Assessment', count: counts.risk },
     { value: 'defi', label: 'DeFi', count: counts.defi },
     { value: 'l1', label: 'Layer 1', count: counts.l1 },
     { value: 'token', label: 'Tokens & Airdrops', count: counts.token },
