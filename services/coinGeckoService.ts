@@ -8,6 +8,14 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
+// Default headers for CoinGecko API requests
+const getHeaders = (): HeadersInit => {
+  return {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  };
+};
+
 /**
  * CoinGecko API Service for fetching real-time crypto market data
  * Uses free public API (no key required, but rate limited)
@@ -24,7 +32,9 @@ class CoinGeckoService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(`${COINGECKO_API_BASE}/search?query=${encodeURIComponent(query)}`);
+      const response = await fetch(`${COINGECKO_API_BASE}/search?query=${encodeURIComponent(query)}`, {
+        headers: getHeaders()
+      });
 
       if (!response.ok) {
         throw new Error(`CoinGecko API error: ${response.status}`);
@@ -41,7 +51,10 @@ class CoinGeckoService {
       return results;
     } catch (error) {
       console.error('Failed to search coin:', error);
-      throw error;
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Unable to connect to CoinGecko API. Please check your internet connection.');
+      }
+      throw error instanceof Error ? error : new Error('Failed to search coin');
     }
   }
 
@@ -55,7 +68,10 @@ class CoinGeckoService {
 
     try {
       const response = await fetch(
-        `${COINGECKO_API_BASE}/coins/markets?vs_currency=usd&ids=${coinId}&order=market_cap_desc&sparkline=false&price_change_percentage=24h,7d,30d`
+        `${COINGECKO_API_BASE}/coins/markets?vs_currency=usd&ids=${coinId}&order=market_cap_desc&sparkline=false&price_change_percentage=24h,7d,30d`,
+        {
+          headers: getHeaders()
+        }
       );
 
       if (!response.ok) {
@@ -94,7 +110,10 @@ class CoinGeckoService {
       return marketData;
     } catch (error) {
       console.error('Failed to fetch coin data:', error);
-      throw error;
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Unable to connect to CoinGecko API. Please check your internet connection or try again later.');
+      }
+      throw error instanceof Error ? error : new Error('Failed to fetch coin data');
     }
   }
 
@@ -108,7 +127,10 @@ class CoinGeckoService {
 
     try {
       const response = await fetch(
-        `${COINGECKO_API_BASE}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}&interval=daily`
+        `${COINGECKO_API_BASE}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}&interval=daily`,
+        {
+          headers: getHeaders()
+        }
       );
 
       if (!response.ok) {
@@ -127,7 +149,10 @@ class CoinGeckoService {
       return chartData;
     } catch (error) {
       console.error('Failed to fetch chart data:', error);
-      throw error;
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Unable to load chart data. Please check your connection.');
+      }
+      throw error instanceof Error ? error : new Error('Failed to fetch chart data');
     }
   }
 
@@ -140,7 +165,9 @@ class CoinGeckoService {
     if (cached) return cached;
 
     try {
-      const response = await fetch(`${COINGECKO_API_BASE}/search/trending`);
+      const response = await fetch(`${COINGECKO_API_BASE}/search/trending`, {
+        headers: getHeaders()
+      });
 
       if (!response.ok) {
         throw new Error(`CoinGecko API error: ${response.status}`);
@@ -158,7 +185,10 @@ class CoinGeckoService {
       return trending;
     } catch (error) {
       console.error('Failed to fetch trending coins:', error);
-      throw error;
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Unable to load trending coins. Please try again.');
+      }
+      throw error instanceof Error ? error : new Error('Failed to fetch trending coins');
     }
   }
 
