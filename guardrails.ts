@@ -20,8 +20,8 @@ export interface GuardrailConfig {
 }
 
 /**
- * Strict guardrails for paid APIs (Claude, paid Gemini)
- * Emphasize data freshness and multi-source verification
+ * Strict guardrails for paid APIs (Claude)
+ * Maximum emphasis on data freshness and multi-source verification
  */
 export const STRICT_GUARDRAILS: GuardrailConfig = {
   dataFreshness: {
@@ -43,24 +43,25 @@ export const STRICT_GUARDRAILS: GuardrailConfig = {
 };
 
 /**
- * Moderate guardrails for free APIs with web search (Gemini Free)
- * Still emphasize freshness but slightly relaxed
+ * Real-time guardrails for web search APIs (Gemini Free)
+ * VERY strict - web search enables near real-time data access
  */
 export const MODERATE_GUARDRAILS: GuardrailConfig = {
   dataFreshness: {
     required: true,
-    maxAge: '1-7 days',
-    verificationSources: 2,
-    description: 'Prioritize recent data (within 1-7 days) and cross-reference key metrics'
+    maxAge: 'Last 24 hours (real-time preferred)',
+    verificationSources: 3,
+    description: 'USE WEB SEARCH to get real-time or last 24-hour data - no exceptions for time-sensitive metrics'
   },
   factChecking: {
     required: true,
     multiSourceValidation: true,
-    description: 'Cross-reference important claims with at least 2 sources'
+    description: 'Verify all claims across minimum 3 independent web sources using Google Search'
   },
   disclaimers: [
-    'Use web search to find the most recent available data',
-    'Verify time-sensitive information from multiple sources',
+    'MANDATORY: Use Google Search for all price, volume, TVL, and market data',
+    'Crypto markets change by the minute - only real-time data is acceptable',
+    'Cross-verify all metrics from multiple live sources (CoinGecko, DeFiLlama, blockchain explorers, official project sites)',
     'This analysis is for informational purposes only, not financial advice'
   ]
 };
@@ -148,10 +149,19 @@ export function generateGuardrailInstructions(provider: AIProvider, enabled: boo
 
   // Provider-specific instructions
   if (provider === 'gemini') {
-    instructions += `### Use Google Search\n`;
-    instructions += `- Actively use Google Search to find the most recent data\n`;
-    instructions += `- Include URLs to sources in your analysis\n`;
-    instructions += `- Prioritize official project websites, blockchain explorers, and reputable data aggregators\n\n`;
+    instructions += `### MANDATORY: Real-Time Web Search Requirements\n`;
+    instructions += `- **YOU MUST** use Google Search for ALL price data, trading volumes, TVL, and market metrics\n`;
+    instructions += `- **NEVER** rely on training data for numerical crypto data - it's outdated\n`;
+    instructions += `- Search for: "[token] price", "[protocol] TVL", "[token] trading volume 24h", etc.\n`;
+    instructions += `- Cross-reference from multiple sources:\n`;
+    instructions += `  * CoinGecko (https://coingecko.com)\n`;
+    instructions += `  * CoinMarketCap (https://coinmarketcap.com)\n`;
+    instructions += `  * DeFiLlama (https://defillama.com)\n`;
+    instructions += `  * Official project websites and dashboards\n`;
+    instructions += `  * Blockchain explorers (Etherscan, etc.)\n`;
+    instructions += `- Include clickable URLs to ALL sources\n`;
+    instructions += `- If sources disagree, highlight discrepancies and explain why\n`;
+    instructions += `- Data must be from the last 24 hours - search with "last 24 hours" qualifier\n\n`;
   } else if (provider === 'ollama') {
     instructions += `### Knowledge Limitations\n`;
     instructions += `- Clearly state your training data cutoff date\n`;
@@ -159,10 +169,20 @@ export function generateGuardrailInstructions(provider: AIProvider, enabled: boo
     instructions += `- Focus on conceptual analysis and frameworks rather than specific current metrics\n\n`;
   }
 
-  instructions += `### Output Requirements\n`;
-  instructions += `- Always timestamp your analysis with "Analysis Date: [current date]"\n`;
-  instructions += `- Note the recency of all data points used (e.g., "as of [date]")\n`;
-  instructions += `- Include a "Data Quality" section noting any limitations or gaps\n`;
+  instructions += `### MANDATORY Output Requirements\n`;
+  instructions += `- **Analysis Date**: State the exact date and time (UTC) at the top: "Analysis Date: [YYYY-MM-DD HH:MM UTC]"\n`;
+  instructions += `- **Data Timestamps**: Every single metric must include its timestamp:\n`;
+  instructions += `  * "Price: $X.XX (as of YYYY-MM-DD HH:MM UTC)"\n`;
+  instructions += `  * "24h Volume: $X.XXM (as of YYYY-MM-DD HH:MM UTC)"\n`;
+  instructions += `  * "TVL: $X.XXM (as of YYYY-MM-DD HH:MM UTC)"\n`;
+  instructions += `- **Source Citations**: Link to every source used:\n`;
+  instructions += `  * Use inline links: [metric name](source URL)\n`;
+  instructions += `  * Example: "Current price is [$0.15](https://coingecko.com/...) (CoinGecko) and [$0.16](https://coinmarketcap.com/...) (CMC)"\n`;
+  instructions += `- **Data Quality Section**: Include at end with:\n`;
+  instructions += `  * All sources used with URLs\n`;
+  instructions += `  * Any data discrepancies found\n`;
+  instructions += `  * Confidence level in the data (High/Medium/Low)\n`;
+  instructions += `  * Any limitations or gaps in available data\n`;
   instructions += `\n---\n`;
 
   return instructions;
