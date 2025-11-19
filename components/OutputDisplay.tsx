@@ -5,7 +5,9 @@ import {
   REPORT_THEMES,
   formatReport,
   exportToPDFHTML,
-  ReportMetadata
+  ReportMetadata,
+  markdownToHTMLForDisplay,
+  getInlineHTMLStyles
 } from '../reportFormatter';
 
 interface OutputDisplayProps {
@@ -91,9 +93,14 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({ title, text, isMarkdown =
   };
 
   const displayText = isMarkdown ? getFormattedText() : text;
+  const htmlContent = isMarkdown ? markdownToHTMLForDisplay(displayText) : null;
+  const cssStyles = isMarkdown ? getInlineHTMLStyles(selectedTheme) : null;
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow-lg relative">
+      {/* Inject CSS styles for HTML rendering */}
+      {cssStyles && <style>{cssStyles}</style>}
+
       <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
         <h3 className="text-xl font-bold text-purple-400">{title}</h3>
 
@@ -194,9 +201,17 @@ const OutputDisplay: React.FC<OutputDisplayProps> = ({ title, text, isMarkdown =
       )}
 
       <div className="bg-gray-900 text-gray-300 p-4 rounded-md overflow-x-auto">
-        <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
-          <code>{displayText}</code>
-        </pre>
+        {isMarkdown && htmlContent ? (
+          <div
+            className="report-content"
+            dangerouslySetInnerHTML={{ __html: htmlContent }}
+          />
+        ) : (
+          <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
+            <code>{displayText}</code>
+          </pre>
+        )}
+
         {groundingChunks && groundingChunks.length > 0 && (
           <div className="mt-6 border-t border-gray-700 pt-4">
             <h4 className="font-semibold text-gray-400 mb-2 font-sans">Sources from Google Search:</h4>
