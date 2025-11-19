@@ -43,6 +43,12 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({ onProviderChange })
         return '🤖';
       case 'gemini':
         return '⭐';
+      case 'openrouter':
+        return '🔀';
+      case 'groq':
+        return '⚡';
+      case 'mistral':
+        return '🇪🇺';
       case 'ollama':
         return '🏠';
     }
@@ -54,20 +60,50 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({ onProviderChange })
         return 'purple';
       case 'gemini':
         return 'blue';
+      case 'openrouter':
+        return 'cyan';
+      case 'groq':
+        return 'yellow';
+      case 'mistral':
+        return 'orange';
       case 'ollama':
         return 'green';
     }
   };
 
-  const getBadgeStyle = (provider: AIProvider, isSelected: boolean) => {
-    const color = getProviderColor(provider);
-    const baseClasses = 'px-4 py-3 rounded-lg cursor-pointer transition-all transform hover:scale-105 border-2';
+  const getProviderBadgeStyles = (provider: AIProvider, isSelected: boolean) => {
+    const colorMap = {
+      claude: {
+        selected: 'bg-purple-600 border-purple-400',
+        unselected: 'bg-gray-700 border-gray-600 hover:border-purple-500'
+      },
+      gemini: {
+        selected: 'bg-blue-600 border-blue-400',
+        unselected: 'bg-gray-700 border-gray-600 hover:border-blue-500'
+      },
+      openrouter: {
+        selected: 'bg-cyan-600 border-cyan-400',
+        unselected: 'bg-gray-700 border-gray-600 hover:border-cyan-500'
+      },
+      groq: {
+        selected: 'bg-yellow-600 border-yellow-400',
+        unselected: 'bg-gray-700 border-gray-600 hover:border-yellow-500'
+      },
+      mistral: {
+        selected: 'bg-orange-600 border-orange-400',
+        unselected: 'bg-gray-700 border-gray-600 hover:border-orange-500'
+      },
+      ollama: {
+        selected: 'bg-green-600 border-green-400',
+        unselected: 'bg-gray-700 border-gray-600 hover:border-green-500'
+      }
+    };
 
-    if (isSelected) {
-      return `${baseClasses} bg-${color}-600 border-${color}-400 text-white shadow-lg`;
-    } else {
-      return `${baseClasses} bg-gray-700 border-gray-600 text-gray-300 hover:border-${color}-500`;
-    }
+    const baseClasses = 'px-4 py-3 rounded-lg cursor-pointer transition-all transform hover:scale-105 border-2';
+    const colors = colorMap[provider];
+    const style = isSelected ? colors.selected : colors.unselected;
+
+    return `${baseClasses} ${style} ${isSelected ? 'text-white shadow-lg' : 'text-gray-300'}`;
   };
 
   return (
@@ -83,7 +119,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({ onProviderChange })
       <div className="grid grid-cols-3 gap-3 mb-3">
         <button
           onClick={() => handleProviderChange('claude')}
-          className={selectedProvider === 'claude' ? 'px-4 py-3 rounded-lg cursor-pointer transition-all transform hover:scale-105 border-2 bg-purple-600 border-purple-400 text-white shadow-lg' : 'px-4 py-3 rounded-lg cursor-pointer transition-all transform hover:scale-105 border-2 bg-gray-700 border-gray-600 text-gray-300 hover:border-purple-500'}
+          className={getProviderBadgeStyles('claude', selectedProvider === 'claude')}
         >
           <div className="text-2xl mb-1">{getProviderIcon('claude')}</div>
           <div className="font-bold text-sm">Claude</div>
@@ -92,7 +128,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({ onProviderChange })
 
         <button
           onClick={() => handleProviderChange('gemini')}
-          className={selectedProvider === 'gemini' ? 'px-4 py-3 rounded-lg cursor-pointer transition-all transform hover:scale-105 border-2 bg-blue-600 border-blue-400 text-white shadow-lg' : 'px-4 py-3 rounded-lg cursor-pointer transition-all transform hover:scale-105 border-2 bg-gray-700 border-gray-600 text-gray-300 hover:border-blue-500'}
+          className={getProviderBadgeStyles('gemini', selectedProvider === 'gemini')}
         >
           <div className="text-2xl mb-1">{getProviderIcon('gemini')}</div>
           <div className="font-bold text-sm">Gemini</div>
@@ -100,8 +136,35 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({ onProviderChange })
         </button>
 
         <button
+          onClick={() => handleProviderChange('openrouter')}
+          className={getProviderBadgeStyles('openrouter', selectedProvider === 'openrouter')}
+        >
+          <div className="text-2xl mb-1">{getProviderIcon('openrouter')}</div>
+          <div className="font-bold text-sm">OpenRouter</div>
+          <div className="text-xs opacity-75 text-green-400">FREE</div>
+        </button>
+
+        <button
+          onClick={() => handleProviderChange('groq')}
+          className={getProviderBadgeStyles('groq', selectedProvider === 'groq')}
+        >
+          <div className="text-2xl mb-1">{getProviderIcon('groq')}</div>
+          <div className="font-bold text-sm">Groq</div>
+          <div className="text-xs opacity-75 text-green-400">FREE</div>
+        </button>
+
+        <button
+          onClick={() => handleProviderChange('mistral')}
+          className={getProviderBadgeStyles('mistral', selectedProvider === 'mistral')}
+        >
+          <div className="text-2xl mb-1">{getProviderIcon('mistral')}</div>
+          <div className="font-bold text-sm">Mistral</div>
+          <div className="text-xs opacity-75 text-green-400">FREE</div>
+        </button>
+
+        <button
           onClick={() => handleProviderChange('ollama')}
-          className={selectedProvider === 'ollama' ? 'px-4 py-3 rounded-lg cursor-pointer transition-all transform hover:scale-105 border-2 bg-green-600 border-green-400 text-white shadow-lg' : 'px-4 py-3 rounded-lg cursor-pointer transition-all transform hover:scale-105 border-2 bg-gray-700 border-gray-600 text-gray-300 hover:border-green-500'}
+          className={getProviderBadgeStyles('ollama', selectedProvider === 'ollama')}
         >
           <div className="text-2xl mb-1">{getProviderIcon('ollama')}</div>
           <div className="font-bold text-sm">Ollama</div>
@@ -145,15 +208,27 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({ onProviderChange })
       <div className="mt-3 text-xs text-gray-400 space-y-1">
         <div className="flex items-start gap-2">
           <span className="font-bold text-purple-400">Claude:</span>
-          <span>Most powerful, requires API key (paid)</span>
+          <span>Premium quality (paid)</span>
         </div>
         <div className="flex items-start gap-2">
           <span className="font-bold text-blue-400">Gemini:</span>
-          <span>FREE tier with Google AI Studio, web search</span>
+          <span>FREE, web search</span>
+        </div>
+        <div className="flex items-start gap-2">
+          <span className="font-bold text-cyan-400">OpenRouter:</span>
+          <span>FREE, 300+ models</span>
+        </div>
+        <div className="flex items-start gap-2">
+          <span className="font-bold text-yellow-400">Groq:</span>
+          <span>FREE, ultra-fast</span>
+        </div>
+        <div className="flex items-start gap-2">
+          <span className="font-bold text-orange-400">Mistral:</span>
+          <span>FREE tier</span>
         </div>
         <div className="flex items-start gap-2">
           <span className="font-bold text-green-400">Ollama:</span>
-          <span>100% free, runs locally, requires Ollama installed</span>
+          <span>100% free, local</span>
         </div>
       </div>
     </div>

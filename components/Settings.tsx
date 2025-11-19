@@ -3,6 +3,9 @@ import { AIProvider } from '../types';
 import * as claudeService from '../services/claudeService';
 import * as geminiService from '../services/geminiService';
 import * as ollamaService from '../services/ollamaService';
+import * as openrouterService from '../services/openrouterService';
+import * as groqService from '../services/groqService';
+import * as mistralService from '../services/mistralService';
 import { getGuardrailDescription } from '../guardrails';
 import { DataGuardrailsSettings } from './DataGuardrailsSettings';
 
@@ -32,6 +35,21 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange, guardrai
   const [ollamaBaseUrl, setOllamaBaseUrl] = useState('http://localhost:11434');
   const [ollamaModel, setOllamaModel] = useState('llama3.1:8b');
 
+  // OpenRouter state
+  const [openrouterApiKey, setOpenrouterApiKey] = useState('');
+  const [openrouterKeySet, setOpenrouterKeySet] = useState(false);
+  const [openrouterMaskedKey, setOpenrouterMaskedKey] = useState<string | null>(null);
+
+  // Groq state
+  const [groqApiKey, setGroqApiKey] = useState('');
+  const [groqKeySet, setGroqKeySet] = useState(false);
+  const [groqMaskedKey, setGroqMaskedKey] = useState<string | null>(null);
+
+  // Mistral state
+  const [mistralApiKey, setMistralApiKey] = useState('');
+  const [mistralKeySet, setMistralKeySet] = useState(false);
+  const [mistralMaskedKey, setMistralMaskedKey] = useState<string | null>(null);
+
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -52,6 +70,27 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange, guardrai
     setGeminiKeySet(hasGeminiKey);
     if (hasGeminiKey) {
       setGeminiMaskedKey(geminiService.getMaskedApiKey());
+    }
+
+    // OpenRouter
+    const hasOpenRouterKey = openrouterService.hasApiKey();
+    setOpenrouterKeySet(hasOpenRouterKey);
+    if (hasOpenRouterKey) {
+      setOpenrouterMaskedKey(openrouterService.getMaskedApiKey());
+    }
+
+    // Groq
+    const hasGroqKey = groqService.hasApiKey();
+    setGroqKeySet(hasGroqKey);
+    if (hasGroqKey) {
+      setGroqMaskedKey(groqService.getMaskedApiKey());
+    }
+
+    // Mistral
+    const hasMistralKey = mistralService.hasApiKey();
+    setMistralKeySet(hasMistralKey);
+    if (hasMistralKey) {
+      setMistralMaskedKey(mistralService.getMaskedApiKey());
     }
 
     // Ollama
@@ -130,6 +169,72 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange, guardrai
       ollamaService.clearConfig();
       checkAllKeys();
       showSuccessToast('Ollama configuration reset');
+      onSettingsChange?.();
+    }
+  };
+
+  // OpenRouter handlers
+  const handleSaveOpenRouterKey = () => {
+    if (!openrouterApiKey.trim()) {
+      alert('Please enter a valid API key');
+      return;
+    }
+    openrouterService.saveApiKey(openrouterApiKey);
+    setOpenrouterApiKey('');
+    checkAllKeys();
+    showSuccessToast('OpenRouter API key saved!');
+    onSettingsChange?.();
+  };
+
+  const handleClearOpenRouterKey = () => {
+    if (confirm('Remove OpenRouter API key?')) {
+      openrouterService.clearApiKey();
+      checkAllKeys();
+      showSuccessToast('OpenRouter API key removed');
+      onSettingsChange?.();
+    }
+  };
+
+  // Groq handlers
+  const handleSaveGroqKey = () => {
+    if (!groqApiKey.trim()) {
+      alert('Please enter a valid API key');
+      return;
+    }
+    groqService.saveApiKey(groqApiKey);
+    setGroqApiKey('');
+    checkAllKeys();
+    showSuccessToast('Groq API key saved!');
+    onSettingsChange?.();
+  };
+
+  const handleClearGroqKey = () => {
+    if (confirm('Remove Groq API key?')) {
+      groqService.clearApiKey();
+      checkAllKeys();
+      showSuccessToast('Groq API key removed');
+      onSettingsChange?.();
+    }
+  };
+
+  // Mistral handlers
+  const handleSaveMistralKey = () => {
+    if (!mistralApiKey.trim()) {
+      alert('Please enter a valid API key');
+      return;
+    }
+    mistralService.saveApiKey(mistralApiKey);
+    setMistralApiKey('');
+    checkAllKeys();
+    showSuccessToast('Mistral API key saved!');
+    onSettingsChange?.();
+  };
+
+  const handleClearMistralKey = () => {
+    if (confirm('Remove Mistral API key?')) {
+      mistralService.clearApiKey();
+      checkAllKeys();
+      showSuccessToast('Mistral API key removed');
       onSettingsChange?.();
     }
   };
@@ -298,6 +403,168 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange, guardrai
     </div>
   );
 
+  const renderOpenRouterTab = () => (
+    <div className="space-y-4">
+      <div className="bg-cyan-900 border border-cyan-700 text-cyan-200 p-4 rounded-lg">
+        <h4 className="font-semibold mb-2">OpenRouter</h4>
+        <p className="text-sm">FREE tier! Access to 300+ models including DeepSeek R1, Llama, Mistral, and more.</p>
+      </div>
+
+      {openrouterKeySet ? (
+        <div className="space-y-4">
+          <div className="bg-gray-700 p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400 mb-1">Current API Key</p>
+                <code className="text-green-400 font-mono">{openrouterMaskedKey}</code>
+              </div>
+              <div className="flex items-center text-green-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm">Active</span>
+              </div>
+            </div>
+          </div>
+          <button onClick={handleClearOpenRouterKey} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+            Remove API Key
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="openrouter-api-key" className="block text-sm font-medium text-gray-300 mb-2">
+              Enter your API Key (FREE!)
+            </label>
+            <input
+              id="openrouter-api-key"
+              type="password"
+              value={openrouterApiKey}
+              onChange={(e) => setOpenrouterApiKey(e.target.value)}
+              placeholder="Your OpenRouter API key..."
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveOpenRouterKey()}
+            />
+          </div>
+          <button onClick={handleSaveOpenRouterKey} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+            Save API Key
+          </button>
+          <p className="text-sm text-gray-400">
+            Get your FREE API key from <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">OpenRouter</a>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderGroqTab = () => (
+    <div className="space-y-4">
+      <div className="bg-yellow-900 border border-yellow-700 text-yellow-200 p-4 rounded-lg">
+        <h4 className="font-semibold mb-2">Groq</h4>
+        <p className="text-sm">FREE tier with ultra-fast inference! Lightning-fast responses with generous rate limits.</p>
+      </div>
+
+      {groqKeySet ? (
+        <div className="space-y-4">
+          <div className="bg-gray-700 p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400 mb-1">Current API Key</p>
+                <code className="text-green-400 font-mono">{groqMaskedKey}</code>
+              </div>
+              <div className="flex items-center text-green-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm">Active</span>
+              </div>
+            </div>
+          </div>
+          <button onClick={handleClearGroqKey} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+            Remove API Key
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="groq-api-key" className="block text-sm font-medium text-gray-300 mb-2">
+              Enter your API Key (FREE!)
+            </label>
+            <input
+              id="groq-api-key"
+              type="password"
+              value={groqApiKey}
+              onChange={(e) => setGroqApiKey(e.target.value)}
+              placeholder="Your Groq API key..."
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveGroqKey()}
+            />
+          </div>
+          <button onClick={handleSaveGroqKey} className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+            Save API Key
+          </button>
+          <p className="text-sm text-gray-400">
+            Get your FREE API key from <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:text-yellow-300 underline">Groq Console</a>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderMistralTab = () => (
+    <div className="space-y-4">
+      <div className="bg-orange-900 border border-orange-700 text-orange-200 p-4 rounded-lg">
+        <h4 className="font-semibold mb-2">Mistral AI</h4>
+        <p className="text-sm">FREE tier available! European AI excellence with high-quality models.</p>
+      </div>
+
+      {mistralKeySet ? (
+        <div className="space-y-4">
+          <div className="bg-gray-700 p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400 mb-1">Current API Key</p>
+                <code className="text-green-400 font-mono">{mistralMaskedKey}</code>
+              </div>
+              <div className="flex items-center text-green-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm">Active</span>
+              </div>
+            </div>
+          </div>
+          <button onClick={handleClearMistralKey} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+            Remove API Key
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="mistral-api-key" className="block text-sm font-medium text-gray-300 mb-2">
+              Enter your API Key (FREE tier!)
+            </label>
+            <input
+              id="mistral-api-key"
+              type="password"
+              value={mistralApiKey}
+              onChange={(e) => setMistralApiKey(e.target.value)}
+              placeholder="Your Mistral API key..."
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveMistralKey()}
+            />
+          </div>
+          <button onClick={handleSaveMistralKey} className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+            Save API Key
+          </button>
+          <p className="text-sm text-gray-400">
+            Get your FREE API key from <a href="https://console.mistral.ai/" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 underline">Mistral Console</a>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-800 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -314,36 +581,66 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange, guardrai
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-700 bg-gray-900">
+        <div className="grid grid-cols-6 border-b border-gray-700 bg-gray-900">
           <button
             onClick={() => setActiveTab('claude')}
-            className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+            className={`py-3 px-2 text-xs font-medium transition-colors ${
               activeTab === 'claude'
                 ? 'bg-gray-800 text-purple-400 border-b-2 border-purple-400'
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            Claude (Premium)
+            Claude
           </button>
           <button
             onClick={() => setActiveTab('gemini')}
-            className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+            className={`py-3 px-2 text-xs font-medium transition-colors ${
               activeTab === 'gemini'
-                ? 'bg-gray-800 text-green-400 border-b-2 border-green-400'
+                ? 'bg-gray-800 text-blue-400 border-b-2 border-blue-400'
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            Gemini (FREE)
+            Gemini
           </button>
           <button
-            onClick={() => setActiveTab('ollama')}
-            className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-              activeTab === 'ollama'
+            onClick={() => setActiveTab('openrouter')}
+            className={`py-3 px-2 text-xs font-medium transition-colors ${
+              activeTab === 'openrouter'
+                ? 'bg-gray-800 text-cyan-400 border-b-2 border-cyan-400'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            OpenRouter
+          </button>
+          <button
+            onClick={() => setActiveTab('groq')}
+            className={`py-3 px-2 text-xs font-medium transition-colors ${
+              activeTab === 'groq'
+                ? 'bg-gray-800 text-yellow-400 border-b-2 border-yellow-400'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            Groq
+          </button>
+          <button
+            onClick={() => setActiveTab('mistral')}
+            className={`py-3 px-2 text-xs font-medium transition-colors ${
+              activeTab === 'mistral'
                 ? 'bg-gray-800 text-orange-400 border-b-2 border-orange-400'
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            Ollama (Local)
+            Mistral
+          </button>
+          <button
+            onClick={() => setActiveTab('ollama')}
+            className={`py-3 px-2 text-xs font-medium transition-colors ${
+              activeTab === 'ollama'
+                ? 'bg-gray-800 text-green-400 border-b-2 border-green-400'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            Ollama
           </button>
         </div>
 
@@ -409,6 +706,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange, guardrai
         <div className="p-6">
           {activeTab === 'claude' && renderClaudeTab()}
           {activeTab === 'gemini' && renderGeminiTab()}
+          {activeTab === 'openrouter' && renderOpenRouterTab()}
+          {activeTab === 'groq' && renderGroqTab()}
+          {activeTab === 'mistral' && renderMistralTab()}
           {activeTab === 'ollama' && renderOllamaTab()}
         </div>
 
