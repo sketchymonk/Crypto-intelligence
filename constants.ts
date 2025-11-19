@@ -10,6 +10,10 @@ export const sections: FormSection[] = [
         label: 'Expert(s) conducting the research',
         type: 'checkbox',
         options: [
+            { value: 'Senior Investment Analyst', label: 'Senior Investment Analyst' },
+            { value: 'DAO Governance Specialist', label: 'DAO Governance Specialist' },
+            { value: 'Protocol Architect', label: 'Protocol Architect (Technical)' },
+            { value: 'Sentiment Analyst', label: 'Sentiment Analyst / Social Listener' },
             { value: 'Lead Tokenomics Analyst', label: 'Lead Tokenomics Analyst' },
             { value: 'On-Chain/Data Engineer', label: 'On-Chain/Data Engineer' },
             { value: 'Macro Strategist', label: 'Macro Strategist' },
