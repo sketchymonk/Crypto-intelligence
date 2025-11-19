@@ -1,11 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { sections } from './constants';
-import { FormData, GroundingChunk } from './types';
+import { FormData, GroundingChunk, AIProvider } from './types';
 import Accordion from './components/Accordion';
 import { TextInput, TextArea, SelectInput, CheckboxGroup } from './components/FormElements';
-import { runDeepAnalysis, runFastAnalysis, runSonnetThinkingAnalysis } from './services/claudeService';
+import { getProviderManager } from './services/aiProvider';
 import OutputDisplay from './components/OutputDisplay';
 import ChatBot from './components/ChatBot';
+import ProviderSelector from './components/ProviderSelector';
 
 const App: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({});
@@ -13,9 +14,10 @@ const App: React.FC = () => {
   const [geminiResponse, setGeminiResponse] = useState('');
   const [groundingChunks, setGroundingChunks] = useState<GroundingChunk[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeAnalysis, setActiveAnalysis] = useState<'deep' | 'fast' | 'sonnet-thinking' | null>(null);
+  const [activeAnalysis, setActiveAnalysis] = useState<'deep' | 'fast' | 'balanced' | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [error, setError] = useState('');
+  const [currentProvider, setCurrentProvider] = useState<AIProvider>('claude');
 
   const handleInputChange = useCallback((section: string, field: string, value: string | boolean | string[]) => {
     setFormData(prev => ({
@@ -56,7 +58,7 @@ const App: React.FC = () => {
     setError('');
   };
 
-  const handleSubmitToAI = async (type: 'deep' | 'fast' | 'sonnet-thinking') => {
+  const handleSubmitToAI = async (type: 'deep' | 'fast' | 'balanced') => {
     if (!generatedPrompt) {
       alert("Please generate the prompt first.");
       return;
@@ -66,14 +68,17 @@ const App: React.FC = () => {
     setError('');
     setGeminiResponse('');
     setGroundingChunks([]);
+
     try {
+      const providerManager = getProviderManager();
       let response;
+
       if (type === 'deep') {
-        response = await runDeepAnalysis(generatedPrompt);
-      } else if (type === 'sonnet-thinking') {
-        response = await runSonnetThinkingAnalysis(generatedPrompt);
+        response = await providerManager.runDeepAnalysis(generatedPrompt);
+      } else if (type === 'balanced') {
+        response = await providerManager.runBalancedAnalysis(generatedPrompt);
       } else {
-        response = await runFastAnalysis(generatedPrompt);
+        response = await providerManager.runFastAnalysis(generatedPrompt);
       }
 
       setGeminiResponse(response.text);
@@ -86,6 +91,12 @@ const App: React.FC = () => {
       setIsLoading(false);
       setActiveAnalysis(null);
     }
+  };
+
+  const handleProviderChange = (provider: AIProvider) => {
+    setCurrentProvider(provider);
+    // Clear any previous errors when changing providers
+    setError('');
   };
 
   const renderField = (sectionId: string, field: any) => {
@@ -152,6 +163,8 @@ const App: React.FC = () => {
 
           {/* Right Column: Output */}
           <div className="flex flex-col space-y-4 sticky top-8 self-start">
+             <ProviderSelector onProviderChange={handleProviderChange} />
+
              <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
                 <h2 className="text-xl font-bold mb-4 text-purple-400">Actions</h2>
                  <div className="flex flex-col gap-4">
@@ -167,21 +180,21 @@ const App: React.FC = () => {
                         disabled={isLoading || !generatedPrompt}
                         className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
                       >
-                        {isLoading && activeAnalysis === 'deep' ? renderLoadingButton('Analyzing...') : '2a. Deep Analysis (Opus + Thinking)'}
+                        {isLoading && activeAnalysis === 'deep' ? renderLoadingButton('Analyzing...') : '2a. Deep Analysis'}
                       </button>
                       <button
-                        onClick={() => handleSubmitToAI('sonnet-thinking')}
+                        onClick={() => handleSubmitToAI('balanced')}
                         disabled={isLoading || !generatedPrompt}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
                       >
-                        {isLoading && activeAnalysis === 'sonnet-thinking' ? renderLoadingButton('Analyzing...') : '2b. Balanced Analysis (Sonnet + Thinking)'}
+                        {isLoading && activeAnalysis === 'balanced' ? renderLoadingButton('Analyzing...') : '2b. Balanced Analysis'}
                       </button>
                       <button
                         onClick={() => handleSubmitToAI('fast')}
                         disabled={isLoading || !generatedPrompt}
                         className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
                       >
-                        {isLoading && activeAnalysis === 'fast' ? renderLoadingButton('Analyzing...') : '2c. Fast Analysis (Sonnet)'}
+                        {isLoading && activeAnalysis === 'fast' ? renderLoadingButton('Analyzing...') : '2c. Fast Analysis'}
                       </button>
                     </div>
                 </div>

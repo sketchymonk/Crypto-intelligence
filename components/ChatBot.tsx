@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { createChatService, ClaudeChatService } from '../services/claudeService';
-import { ChatMessage } from '../types';
+import { getProviderManager } from '../services/aiProvider';
+import { ChatMessage, ChatService } from '../types';
 
 interface ChatBotProps {
   onClose: () => void;
@@ -10,11 +10,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ onClose }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const chatRef = useRef<ClaudeChatService | null>(null);
+  const chatRef = useRef<ChatService | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatRef.current = createChatService();
+    const providerManager = getProviderManager();
+    chatRef.current = providerManager.createChatService();
     setMessages([{ role: 'model', text: 'Hello! I\'m your AI assistant. How can I help you with crypto research today?' }]);
   }, []);
 
