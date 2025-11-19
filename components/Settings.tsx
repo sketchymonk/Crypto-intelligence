@@ -4,6 +4,7 @@ import * as claudeService from '../services/claudeService';
 import * as geminiService from '../services/geminiService';
 import * as ollamaService from '../services/ollamaService';
 import { getGuardrailDescription } from '../guardrails';
+import { DataGuardrailsSettings } from './DataGuardrailsSettings';
 
 interface SettingsProps {
   onClose: () => void;
@@ -15,6 +16,7 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange, guardrailsEnabled = true, currentProvider = 'claude' }) => {
   const [activeTab, setActiveTab] = useState<AIProvider>(currentProvider);
   const [localGuardrailsEnabled, setLocalGuardrailsEnabled] = useState(guardrailsEnabled);
+  const [showDataQualitySettings, setShowDataQualitySettings] = useState(false);
 
   // Claude state
   const [claudeApiKey, setClaudeApiKey] = useState('');
@@ -376,7 +378,32 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange, guardrai
               <span className="text-gray-400">Disabled - Standard analysis without special data freshness requirements</span>
             )}
           </div>
+
+          {/* Advanced Data Quality Settings Toggle */}
+          <div className="mt-4">
+            <button
+              onClick={() => setShowDataQualitySettings(!showDataQualitySettings)}
+              className="flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-4 w-4 transition-transform ${showDataQualitySettings ? 'rotate-90' : ''}`}
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+              Advanced Data Quality & Provenance Settings
+            </button>
+          </div>
         </div>
+
+        {/* Expanded Data Quality Settings */}
+        {showDataQualitySettings && (
+          <div className="border-b border-gray-700 bg-gray-900">
+            <DataGuardrailsSettings />
+          </div>
+        )}
 
         {/* Content */}
         <div className="p-6">

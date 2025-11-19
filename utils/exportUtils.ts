@@ -1,4 +1,4 @@
-import { SavedAnalysis } from '../types';
+import { SavedAnalysis, DataProvenance } from '../types';
 import { marked } from 'marked';
 
 /**
@@ -118,9 +118,128 @@ function convertKeyMetricsToTable(markdown: string): string {
 }
 
 /**
+ * Generate data provenance table HTML
+ */
+function generateProvenanceTableHTML(provenance: DataProvenance[]): string {
+  if (!provenance || provenance.length === 0) {
+    return '';
+  }
+
+  let tableHTML = `
+    <div class="provenance-section">
+      <h2>📊 Data Provenance & Quality Report</h2>
+      <p class="provenance-description">
+        This table provides complete transparency on all data sources, their freshness,
+        confidence levels, and validation status for every metric used in this analysis.
+      </p>
+      <table class="data-table provenance-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Value</th>
+            <th>Data Sources</th>
+            <th>Timestamp</th>
+            <th>Confidence</th>
+            <th>Staleness</th>
+            <th>Status</th>
+            <th>Validation</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  provenance.forEach(item => {
+    const statusClass =
+      item.validationStatus === 'pass' ? 'status-pass' :
+      item.validationStatus === 'warning' ? 'status-warning' :
+      'status-fail';
+
+    const statusIcon =
+      item.validationStatus === 'pass' ? '✓' :
+      item.validationStatus === 'warning' ? '⚠' :
+      '✗';
+
+    item.sources.forEach((source, index) => {
+      const sourceStatusClass =
+        source.status === 'active' ? 'source-active' :
+        source.status === 'warning' ? 'source-warning' :
+        source.status === 'error' ? 'source-error' :
+        'source-blacklisted';
+
+      const timestamp = new Date(source.timestamp).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      tableHTML += `
+        <tr>
+          ${index === 0 ? `<td rowspan="${item.sources.length}">${item.metric}</td>` : ''}
+          ${index === 0 ? `<td rowspan="${item.sources.length}"><strong>${item.value}</strong></td>` : ''}
+          <td>
+            <div class="source-info">
+              <span class="source-name">${source.name}</span>
+              ${source.url ? `<a href="${source.url}" target="_blank" class="source-link">🔗</a>` : ''}
+            </div>
+          </td>
+          <td>${timestamp}</td>
+          <td>
+            <div class="confidence-bar">
+              <div class="confidence-fill" style="width: ${source.confidence}%"></div>
+              <span class="confidence-text">${source.confidence}%</span>
+            </div>
+          </td>
+          <td>
+            <span class="${source.isStale ? 'staleness-warning' : 'staleness-fresh'}">
+              ${source.staleness !== undefined ? `${source.staleness} min` : 'N/A'}
+            </span>
+          </td>
+          <td>
+            <span class="source-status ${sourceStatusClass}">
+              ${source.status}
+            </span>
+          </td>
+          ${index === 0 ? `
+            <td rowspan="${item.sources.length}">
+              <div class="validation-status ${statusClass}">
+                <span class="validation-icon">${statusIcon}</span>
+                <span class="validation-text">${item.validationStatus}</span>
+                ${item.validationMessages && item.validationMessages.length > 0 ? `
+                  <div class="validation-messages">
+                    ${item.validationMessages.map(msg => `<div class="validation-msg">• ${msg}</div>`).join('')}
+                  </div>
+                ` : ''}
+                ${item.consensus ? `
+                  <div class="consensus-info">
+                    <small>Consensus: ${item.consensus.method} | Deviation: ${item.consensus.deviation?.toFixed(2)}%</small>
+                    ${item.consensus.outliers && item.consensus.outliers.length > 0 ? `
+                      <small>Outliers: ${item.consensus.outliers.join(', ')}</small>
+                    ` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            </td>
+          ` : ''}
+        </tr>
+      `;
+    });
+  });
+
+  tableHTML += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  return tableHTML;
+}
+
+/**
  * Generate professional HTML report
  */
-export function generateAnalysisHTML(analysis: SavedAnalysis): string {
+export function generateAnalysisHTML(analysis: SavedAnalysis, includeProvenance: boolean = false): string {
   const date = new Date(analysis.timestamp);
   const formattedDate = date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -643,6 +762,192 @@ export function generateAnalysisHTML(analysis: SavedAnalysis): string {
         }
 
         /* ========================================
+           DATA PROVENANCE TABLE
+           ======================================== */
+
+        .provenance-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 3px solid var(--accent-gold);
+        }
+
+        .provenance-section h2 {
+            color: var(--primary-navy);
+            margin-bottom: 12px;
+        }
+
+        .provenance-description {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            font-size: 11pt;
+        }
+
+        .provenance-table {
+            font-size: 9.5pt;
+        }
+
+        .provenance-table th {
+            font-size: 10px;
+        }
+
+        .source-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .source-name {
+            font-weight: 500;
+        }
+
+        .source-link {
+            font-size: 12px;
+            text-decoration: none;
+        }
+
+        .confidence-bar {
+            position: relative;
+            width: 100%;
+            height: 20px;
+            background: var(--bg-gray-100);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #10B981 0%, #059669 100%);
+            transition: width 0.3s;
+        }
+
+        .confidence-text {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .staleness-fresh {
+            color: #10B981;
+            font-weight: 600;
+        }
+
+        .staleness-warning {
+            color: #F59E0B;
+            font-weight: 600;
+        }
+
+        .source-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .source-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: #059669;
+        }
+
+        .source-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #D97706;
+        }
+
+        .source-error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #DC2626;
+        }
+
+        .source-blacklisted {
+            background: rgba(153, 27, 27, 0.15);
+            color: #991B1B;
+        }
+
+        .validation-status {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .validation-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: 700;
+            margin-right: 6px;
+        }
+
+        .status-pass .validation-icon {
+            background: #10B981;
+            color: white;
+        }
+
+        .status-warning .validation-icon {
+            background: #F59E0B;
+            color: white;
+        }
+
+        .status-fail .validation-icon {
+            background: #EF4444;
+            color: white;
+        }
+
+        .validation-text {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pass .validation-text {
+            color: #10B981;
+        }
+
+        .status-warning .validation-text {
+            color: #F59E0B;
+        }
+
+        .status-fail .validation-text {
+            color: #EF4444;
+        }
+
+        .validation-messages {
+            margin-top: 8px;
+            font-size: 9px;
+            color: var(--text-secondary);
+        }
+
+        .validation-msg {
+            padding: 2px 0;
+        }
+
+        .consensus-info {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-gray);
+        }
+
+        .consensus-info small {
+            display: block;
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        /* ========================================
            PRINT STYLES
            ======================================== */
 
@@ -759,6 +1064,8 @@ export function generateAnalysisHTML(analysis: SavedAnalysis): string {
             <div class="content-section">
                 ${contentHtml}
             </div>
+
+            ${includeProvenance && analysis.dataProvenance ? generateProvenanceTableHTML(analysis.dataProvenance) : ''}
         </div>
 
         <!-- FOOTER -->
@@ -790,8 +1097,8 @@ export function generateAnalysisHTML(analysis: SavedAnalysis): string {
 /**
  * Download analysis as professional HTML file
  */
-export function downloadAsHTML(analysis: SavedAnalysis): void {
-  const html = generateAnalysisHTML(analysis);
+export function downloadAsHTML(analysis: SavedAnalysis, includeProvenance: boolean = false): void {
+  const html = generateAnalysisHTML(analysis, includeProvenance);
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -807,8 +1114,8 @@ export function downloadAsHTML(analysis: SavedAnalysis): void {
 /**
  * Export as PDF (opens print dialog)
  */
-export function exportAsPDF(analysis: SavedAnalysis): void {
-  const html = generateAnalysisHTML(analysis);
+export function exportAsPDF(analysis: SavedAnalysis, includeProvenance: boolean = false): void {
+  const html = generateAnalysisHTML(analysis, includeProvenance);
   const printWindow = window.open('', '_blank');
 
   if (printWindow) {
