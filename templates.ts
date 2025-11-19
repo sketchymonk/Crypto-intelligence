@@ -8,7 +8,7 @@ export interface Template {
   id: string;
   name: string;
   description: string;
-  category: 'defi' | 'l1' | 'token' | 'security' | 'trading' | 'risk';
+  category: 'defi' | 'l1' | 'token' | 'security' | 'trading' | 'risk' | 'expert';
   formData: FormData;
 }
 
@@ -731,6 +731,178 @@ export const TEMPLATES: Template[] = [
         modules: ['security', 'governance', 'tokenomics', 'onChain', 'marketStructure', 'newsflow']
       }
     }
+  },
+  {
+    id: 'expert-senior-analyst',
+    name: '👔 Senior Researcher & Investment Analyst',
+    description: 'Institutional-grade analysis from the perspective of a seasoned investment professional with 10+ years in traditional finance and crypto markets',
+    category: 'expert',
+    formData: {
+      context: {
+        experts: ['Senior Investment Analyst (15+ yrs)', 'Portfolio Manager', 'Macro Strategist', 'Risk Manager'],
+        purpose: 'Investment Committee Presentation',
+        actionability: 'Strategic investment decision',
+        priorKnowledge: 'Institutional investment frameworks, portfolio theory, risk management',
+        gaps: 'Investment thesis, risk-adjusted returns, portfolio fit, correlation analysis, downside protection'
+      },
+      coreQuestion: {
+        primaryQuestion: 'Should our fund allocate capital to this crypto asset, and if so, at what weight in the portfolio?',
+        hypothesis: 'This asset offers superior risk-adjusted returns and portfolio diversification benefits',
+        counterfactuals: 'Bull: Institutional adoption drives sustained value creation. Bear: Regulatory crackdown, technological obsolescence, or market structure collapse'
+      },
+      specifications: {
+        timePeriod: 'Last 24 months + forward 12-24 months',
+        geographicLocation: 'Global',
+        sectorFocus: ['All relevant sectors'],
+        demographicFocus: ['Institutional', 'High Net Worth'],
+        methodology: ['Fundamental Analysis', 'Quantitative Modeling', 'Scenario Analysis', 'Portfolio Theory', 'Comparative Valuation'],
+        ethics: 'ESG considerations, regulatory compliance, fiduciary duty, conflict of interest screening'
+      },
+      output: {
+        executiveSummary: 'Yes',
+        depth: 'Level 3',
+        contentElements: ['trends', 'dataCharts', 'caseStudies', 'players', 'viewpoints', 'predictions', 'implications', 'alphaSignals'],
+        visualizations: ['Risk/Return scatter plots', 'Correlation matrices', 'Scenario analysis trees', 'Price/Volume charts'],
+        targetLength: '3,500-5,500 words',
+        citationStyle: 'Academic citations'
+      },
+      format: {
+        writingFormat: 'Investment Memo',
+        writingPerspective: 'First-person plural (institutional "we")'
+      },
+      cryptoModules: {
+        modules: ['tokenomics', 'onChain', 'marketStructure', 'governance', 'competitive', 'technical', 'newsflow']
+      }
+    }
+  },
+  {
+    id: 'expert-dao-governance',
+    name: '🗳️ DAO Governance Specialist',
+    description: 'Expert analysis of governance mechanisms, voting power distribution, treasury management, and decentralization from a DAO governance researcher',
+    category: 'expert',
+    formData: {
+      context: {
+        experts: ['DAO Governance Researcher', 'Mechanism Designer', 'On-Chain/Data Engineer', 'Political Economist'],
+        purpose: 'Governance assessment and recommendations',
+        actionability: 'Strategic governance participation or investment decision',
+        priorKnowledge: 'DAO structures, voting mechanisms, token economics, game theory',
+        gaps: 'Voting power concentration, governance attack vectors, treasury sustainability, decision-making efficiency, voter participation trends'
+      },
+      coreQuestion: {
+        primaryQuestion: 'Is this DAO\'s governance system effective, fair, and resilient to attacks? How is decision-making power actually distributed?',
+        hypothesis: 'The DAO has balanced governance that prevents plutocracy while remaining efficient',
+        counterfactuals: 'Best case: Active, diverse participation with strong checks and balances. Worst case: Governance capture, voter apathy, or malicious proposals passing'
+      },
+      specifications: {
+        timePeriod: 'All-time governance history + forward analysis',
+        geographicLocation: 'Global',
+        sectorFocus: ['DeFi', 'Infrastructure', 'L1', 'L2'],
+        demographicFocus: ['Token holders', 'Delegates', 'Core contributors'],
+        methodology: ['On-chain Quant Analysis', 'Network Analysis', 'Game Theory', 'Political Economy', 'Comparative Analysis'],
+        ethics: 'Decentralization assessment, plutocracy risk, minority protection, transparent decision-making'
+      },
+      output: {
+        executiveSummary: 'Yes',
+        depth: 'Level 3',
+        contentElements: ['trends', 'dataCharts', 'caseStudies', 'players', 'implications', 'alphaSignals'],
+        visualizations: ['Voting power distribution charts', 'Proposal outcome analysis', 'Delegate network graphs', 'Treasury flow diagrams'],
+        targetLength: '3,000-4,500 words',
+        citationStyle: 'Inline links'
+      },
+      format: {
+        writingFormat: 'Research Report',
+        writingPerspective: 'Neutral/Formal Tone'
+      },
+      cryptoModules: {
+        modules: ['governance', 'tokenomics', 'onChain', 'marketStructure', 'competitive', 'newsflow']
+      }
+    }
+  },
+  {
+    id: 'expert-protocol-architect',
+    name: '⚙️ Protocol Architect (Technical)',
+    description: 'Deep technical analysis from a blockchain engineer\'s perspective: architecture, smart contracts, scalability, and technical trade-offs',
+    category: 'expert',
+    formData: {
+      context: {
+        experts: ['Protocol Engineer', 'Smart Contract Auditor', 'Distributed Systems Architect', 'Cryptographer'],
+        purpose: 'Technical due diligence',
+        actionability: 'Technical risk assessment for investment or integration',
+        priorKnowledge: 'Blockchain architecture, consensus mechanisms, smart contract design, cryptography',
+        gaps: 'Architecture soundness, scalability limits, security model, code quality, technical debt, upgrade mechanisms'
+      },
+      coreQuestion: {
+        primaryQuestion: 'Is this protocol\'s technical architecture sound, scalable, and secure? What are the critical technical risks?',
+        hypothesis: 'The protocol implements proven designs with appropriate trade-offs for its use case',
+        counterfactuals: 'Best: Novel but sound technical innovations with strong security. Worst: Fundamental design flaws, unproven cryptography, or critical vulnerabilities'
+      },
+      specifications: {
+        timePeriod: 'Current architecture + planned upgrades',
+        geographicLocation: 'Global (technical analysis)',
+        sectorFocus: ['L1', 'L2', 'DeFi', 'Infrastructure'],
+        demographicFocus: ['Developers', 'Technical users', 'Validators'],
+        methodology: ['Code Review', 'Architecture Analysis', 'Security Assessment', 'Benchmark Testing', 'Comparative Technical Analysis'],
+        ethics: 'Open-source commitment, bug bounty programs, audit transparency, upgrade governance'
+      },
+      output: {
+        executiveSummary: 'Yes',
+        depth: 'Level 3',
+        contentElements: ['dataCharts', 'caseStudies', 'implications', 'alphaSignals'],
+        visualizations: ['Architecture diagrams', 'Performance benchmarks', 'Security audit findings', 'Code complexity metrics'],
+        targetLength: '3,000-4,500 words',
+        citationStyle: 'Technical documentation style with links'
+      },
+      format: {
+        writingFormat: 'Technical Report',
+        writingPerspective: 'Technical/Expert Tone'
+      },
+      cryptoModules: {
+        modules: ['technical', 'security', 'onChain', 'governance', 'competitive']
+      }
+    }
+  },
+  {
+    id: 'expert-sentiment-analyst',
+    name: '📱 Sentiment Analyst / Social Listener',
+    description: 'Social media intelligence and sentiment analysis: community health, narrative trends, influencer activity, and early warning signals',
+    category: 'expert',
+    formData: {
+      context: {
+        experts: ['Social Media Analyst', 'Community Manager', 'Behavioral Psychologist', 'Data Scientist'],
+        purpose: 'Sentiment intelligence and community health assessment',
+        actionability: 'Early warning system for sentiment shifts and community issues',
+        priorKnowledge: 'Social media dynamics, community building, sentiment analysis, network effects',
+        gaps: 'Real-time sentiment, narrative momentum, influencer alignment, community cohesion, FUD/FOMO cycles, early warning signals'
+      },
+      coreQuestion: {
+        primaryQuestion: 'What is the current sentiment, narrative momentum, and community health? Are there early signals of major shifts?',
+        hypothesis: 'Positive sentiment and strong community engagement correlate with price performance and resilience',
+        counterfactuals: 'Positive: Growing authentic community with constructive discourse. Negative: Astroturfing, coordinated FUD, influencer exit, community fracturing'
+      },
+      specifications: {
+        timePeriod: 'Last 7-30 days (real-time focus) + historical trends',
+        geographicLocation: 'Global social media platforms',
+        sectorFocus: ['All sectors'],
+        demographicFocus: ['Retail', 'Crypto Twitter', 'Discord/Telegram communities', 'Influencers'],
+        methodology: ['Sentiment Analysis', 'Social Network Analysis', 'Narrative Tracking', 'Behavioral Analysis', 'Anomaly Detection'],
+        ethics: 'Authenticity assessment, bot detection, astroturfing identification, pump-and-dump warnings'
+      },
+      output: {
+        executiveSummary: 'Yes',
+        depth: 'Level 2',
+        contentElements: ['trends', 'dataCharts', 'viewpoints', 'predictions', 'alphaSignals'],
+        visualizations: ['Sentiment time series', 'Keyword clouds', 'Influencer network graphs', 'Engagement metrics', 'Narrative shift detection'],
+        targetLength: '1,500-2,500 words',
+        citationStyle: 'Social media links'
+      },
+      format: {
+        writingFormat: 'Intelligence Brief',
+        writingPerspective: 'Analytical/Data-driven'
+      },
+      cryptoModules: {
+        modules: ['newsflow', 'marketStructure', 'onChain', 'competitive']
+      }
+    }
   }
 ];
 
@@ -758,10 +930,12 @@ export function getTemplateCategories(): Array<{ value: Template['category']; la
     token: TEMPLATES.filter(t => t.category === 'token').length,
     security: TEMPLATES.filter(t => t.category === 'security').length,
     trading: TEMPLATES.filter(t => t.category === 'trading').length,
-    risk: TEMPLATES.filter(t => t.category === 'risk').length
+    risk: TEMPLATES.filter(t => t.category === 'risk').length,
+    expert: TEMPLATES.filter(t => t.category === 'expert').length
   };
 
   return [
+    { value: 'expert', label: '👥 Expert Perspectives', count: counts.expert },
     { value: 'risk', label: '🚨 Risk Assessment', count: counts.risk },
     { value: 'defi', label: 'DeFi', count: counts.defi },
     { value: 'l1', label: 'Layer 1', count: counts.l1 },
