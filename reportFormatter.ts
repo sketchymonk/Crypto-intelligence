@@ -413,34 +413,290 @@ export function exportToPDFHTML(
 }
 
 /**
- * Basic markdown to HTML conversion
+ * Comprehensive markdown to HTML conversion with proper formatting
  */
 function markdownToHTML(markdown: string): string {
   let html = markdown;
 
-  // Headers
-  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+  // Escape HTML entities first
+  html = html.replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 
-  // Bold
-  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Code blocks (must be before inline code)
+  html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+    return `<pre><code class="language-${lang || 'plaintext'}">${code.trim()}</code></pre>`;
+  });
 
-  // Italic
-  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  // Headers (with IDs for TOC)
+  html = html.replace(/^#### (.*$)/gim, (match, text) => {
+    const id = text.toLowerCase().replace(/[^\w]+/g, '-');
+    return `<h4 id="${id}">${text}</h4>`;
+  });
+  html = html.replace(/^### (.*$)/gim, (match, text) => {
+    const id = text.toLowerCase().replace(/[^\w]+/g, '-');
+    return `<h3 id="${id}">${text}</h3>`;
+  });
+  html = html.replace(/^## (.*$)/gim, (match, text) => {
+    const id = text.toLowerCase().replace(/[^\w]+/g, '-');
+    return `<h2 id="${id}">${text}</h2>`;
+  });
+  html = html.replace(/^# (.*$)/gim, (match, text) => {
+    const id = text.toLowerCase().replace(/[^\w]+/g, '-');
+    return `<h1 id="${id}">${text}</h1>`;
+  });
+
+  // Tables - detect markdown tables
+  html = html.replace(/\n(\|.+\|)\n\|([-: |]+)\|\n((?:\|.+\|\n?)+)/g, (match, header, separator, rows) => {
+    // Parse header
+    const headerCells = header.split('|').filter(cell => cell.trim()).map(cell =>
+      `<th>${cell.trim()}</th>`
+    ).join('');
+
+    // Parse rows
+    const rowsHtml = rows.trim().split('\n').map(row => {
+      const cells = row.split('|').filter(cell => cell.trim()).map(cell =>
+        `<td>${cell.trim()}</td>`
+      ).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('\n');
+
+    return `\n<table class="data-table"><thead><tr>${headerCells}</tr></thead><tbody>\n${rowsHtml}\n</tbody></table>\n`;
+  });
+
+  // Blockquotes
+  html = html.replace(/^&gt; (.+)$/gim, '<blockquote>$1</blockquote>');
 
   // Horizontal rules
   html = html.replace(/^---$/gm, '<hr>');
 
-  // Line breaks
-  html = html.replace(/\n\n/g, '</p><p>');
-  html = '<p>' + html + '</p>';
+  // Bold (must be before italic)
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
-  // Lists (basic)
-  html = html.replace(/<p>- (.*?)<\/p>/g, '<ul><li>$1</li></ul>');
+  // Italic
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+  // Unordered lists - handle multi-line lists properly
+  html = html.replace(/(?:^|\n)((?:[-*+] .+(?:\n|$))+)/gm, (match, list) => {
+    const items = list.trim().split('\n').map(item => {
+      const text = item.replace(/^[-*+] /, '');
+      return `<li>${text}</li>`;
+    }).join('\n');
+    return `\n<ul>\n${items}\n</ul>\n`;
+  });
+
+  // Ordered lists
+  html = html.replace(/(?:^|\n)((?:\d+\. .+(?:\n|$))+)/gm, (match, list) => {
+    const items = list.trim().split('\n').map(item => {
+      const text = item.replace(/^\d+\. /, '');
+      return `<li>${text}</li>`;
+    }).join('\n');
+    return `\n<ol>\n${items}\n</ol>\n`;
+  });
+
+  // Paragraphs - split by double newlines
+  html = html.split('\n\n').map(block => {
+    block = block.trim();
+    // Don't wrap if it's already an HTML tag
+    if (block.match(/^<(h[1-6]|ul|ol|table|blockquote|pre|hr|div)/)) {
+      return block;
+    }
+    // Don't wrap empty blocks
+    if (!block) {
+      return '';
+    }
+    return `<p>${block.replace(/\n/g, '<br>')}</p>`;
+  }).join('\n\n');
 
   return html;
+}
+
+/**
+ * Get inline HTML styles for rendering in the app (dark mode)
+ */
+export function getInlineStyles(theme: ReportTheme): string {
+  const config = REPORT_THEMES[theme];
+
+  return `
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    line-height: 1.7;
+    color: #e2e8f0;
+    max-width: 100%;
+  `;
+}
+
+/**
+ * Get CSS classes for in-app HTML rendering (dark mode)
+ */
+export function getInlineHTMLStyles(theme: ReportTheme): string {
+  const config = REPORT_THEMES[theme];
+
+  return `
+    .report-content {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      line-height: 1.7;
+      color: #e2e8f0;
+    }
+
+    .report-content h1 {
+      color: ${config.accentColor};
+      font-size: 2em;
+      font-weight: 700;
+      margin: 1.5em 0 0.5em 0;
+      padding-bottom: 0.3em;
+      border-bottom: 2px solid ${config.accentColor};
+    }
+
+    .report-content h2 {
+      color: ${config.accentColor};
+      font-size: 1.6em;
+      font-weight: 600;
+      margin: 1.3em 0 0.5em 0;
+      padding-left: 0.5em;
+      border-left: 4px solid ${config.accentColor};
+    }
+
+    .report-content h3 {
+      color: #cbd5e0;
+      font-size: 1.3em;
+      font-weight: 600;
+      margin: 1.2em 0 0.4em 0;
+    }
+
+    .report-content h4 {
+      color: #cbd5e0;
+      font-size: 1.1em;
+      font-weight: 600;
+      margin: 1em 0 0.3em 0;
+    }
+
+    .report-content p {
+      margin: 0.8em 0;
+      text-align: left;
+      line-height: 1.8;
+    }
+
+    .report-content ul, .report-content ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+
+    .report-content li {
+      margin: 0.5em 0;
+      line-height: 1.6;
+    }
+
+    .report-content ul {
+      list-style-type: disc;
+    }
+
+    .report-content ol {
+      list-style-type: decimal;
+    }
+
+    .report-content code {
+      background: #2d3748;
+      color: #68d391;
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+      font-family: 'Fira Code', 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+
+    .report-content pre {
+      background: #1a202c;
+      padding: 1em;
+      border-radius: 6px;
+      overflow-x: auto;
+      border-left: 4px solid ${config.accentColor};
+      margin: 1em 0;
+    }
+
+    .report-content pre code {
+      background: transparent;
+      padding: 0;
+      color: #e2e8f0;
+      font-size: 0.85em;
+      line-height: 1.5;
+    }
+
+    .report-content blockquote {
+      border-left: 4px solid #4a5568;
+      padding-left: 1em;
+      margin: 1em 0;
+      color: #a0aec0;
+      font-style: italic;
+    }
+
+    .report-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5em 0;
+      background: #2d3748;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .report-content th {
+      background: ${config.accentColor};
+      color: white;
+      font-weight: 600;
+      padding: 0.75em 1em;
+      text-align: left;
+      border-bottom: 2px solid #1a202c;
+    }
+
+    .report-content td {
+      padding: 0.75em 1em;
+      border-bottom: 1px solid #4a5568;
+    }
+
+    .report-content tr:last-child td {
+      border-bottom: none;
+    }
+
+    .report-content tr:hover {
+      background: #374151;
+    }
+
+    .report-content a {
+      color: #63b3ed;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    .report-content a:hover {
+      border-bottom-color: #63b3ed;
+    }
+
+    .report-content hr {
+      border: none;
+      border-top: 2px solid #4a5568;
+      margin: 2em 0;
+    }
+
+    .report-content strong {
+      color: #f7fafc;
+      font-weight: 600;
+    }
+
+    .report-content em {
+      color: #cbd5e0;
+      font-style: italic;
+    }
+  `;
+}
+
+/**
+ * Convert markdown to HTML for inline display in the app
+ */
+export function markdownToHTMLForDisplay(markdown: string): string {
+  return markdownToHTML(markdown);
 }
