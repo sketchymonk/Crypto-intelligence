@@ -1,0 +1,275 @@
+import { AIProvider, AnalysisResult, ChatService, ModelInfo } from '../types';
+import * as claudeService from './claudeService';
+import * as geminiService from './geminiService';
+import * as ollamaService from './ollamaService';
+
+/**
+ * Available models across all providers
+ */
+export const AVAILABLE_MODELS: ModelInfo[] = [
+  // Claude Models
+  {
+    id: 'claude-opus-deep',
+    name: 'Claude Opus 4 (Deep Thinking)',
+    description: 'Most powerful analysis with extended thinking. Best for complex research.',
+    provider: 'claude',
+    cost: 'high',
+    speed: 'slow'
+  },
+  {
+    id: 'claude-sonnet-balanced',
+    name: 'Claude Sonnet 4.5 (Balanced)',
+    description: 'Balanced speed and reasoning with thinking mode.',
+    provider: 'claude',
+    cost: 'medium',
+    speed: 'medium'
+  },
+  {
+    id: 'claude-sonnet-fast',
+    name: 'Claude Sonnet 4.5 (Fast)',
+    description: 'Fast analysis without thinking mode.',
+    provider: 'claude',
+    cost: 'medium',
+    speed: 'fast'
+  },
+
+  // Gemini Models
+  {
+    id: 'gemini-pro-deep',
+    name: 'Gemini 2.5 Pro (Deep Thinking)',
+    description: 'Deep analysis with maximum thinking budget. FREE with Google AI Studio!',
+    provider: 'gemini',
+    cost: 'free',
+    speed: 'slow'
+  },
+  {
+    id: 'gemini-flash-grounded',
+    name: 'Gemini 2.5 Flash (Web Search)',
+    description: 'Fast analysis with real-time Google Search grounding. FREE!',
+    provider: 'gemini',
+    cost: 'free',
+    speed: 'fast'
+  },
+  {
+    id: 'gemini-flash-fast',
+    name: 'Gemini 2.5 Flash',
+    description: 'Quick analysis without web search. FREE!',
+    provider: 'gemini',
+    cost: 'free',
+    speed: 'fast'
+  },
+
+  // Ollama Models
+  {
+    id: 'ollama-deep',
+    name: 'Local Model (Large)',
+    description: 'Deep analysis using larger local model (e.g., Llama 3.1 70B). Completely FREE!',
+    provider: 'ollama',
+    cost: 'free',
+    speed: 'slow'
+  },
+  {
+    id: 'ollama-balanced',
+    name: 'Local Model (Medium)',
+    description: 'Balanced analysis with local model. Completely FREE!',
+    provider: 'ollama',
+    cost: 'free',
+    speed: 'medium'
+  },
+  {
+    id: 'ollama-fast',
+    name: 'Local Model (Small)',
+    description: 'Fast analysis using smaller local model (e.g., Llama 3.1 8B). Completely FREE!',
+    provider: 'ollama',
+    cost: 'free',
+    speed: 'fast'
+  },
+];
+
+/**
+ * AI Provider Manager
+ * Handles switching between different AI providers (Claude, Gemini, Ollama)
+ */
+export class AIProviderManager {
+  private currentProvider: AIProvider;
+
+  constructor(provider: AIProvider = 'claude') {
+    this.currentProvider = provider;
+  }
+
+  /**
+   * Set the active AI provider
+   */
+  setProvider(provider: AIProvider): void {
+    this.currentProvider = provider;
+  }
+
+  /**
+   * Get the current provider
+   */
+  getProvider(): AIProvider {
+    return this.currentProvider;
+  }
+
+  /**
+   * Run deep analysis using the current provider
+   */
+  async runDeepAnalysis(prompt: string): Promise<AnalysisResult> {
+    switch (this.currentProvider) {
+      case 'claude':
+        return claudeService.runDeepAnalysis(prompt);
+      case 'gemini':
+        return geminiService.runDeepAnalysis(prompt);
+      case 'ollama':
+        return ollamaService.runDeepAnalysis(prompt);
+      default:
+        throw new Error(`Unknown provider: ${this.currentProvider}`);
+    }
+  }
+
+  /**
+   * Run fast analysis using the current provider
+   */
+  async runFastAnalysis(prompt: string): Promise<AnalysisResult> {
+    switch (this.currentProvider) {
+      case 'claude':
+        return claudeService.runFastAnalysis(prompt);
+      case 'gemini':
+        return geminiService.runFastAnalysis(prompt);
+      case 'ollama':
+        return ollamaService.runFastAnalysis(prompt);
+      default:
+        throw new Error(`Unknown provider: ${this.currentProvider}`);
+    }
+  }
+
+  /**
+   * Run balanced analysis using the current provider
+   */
+  async runBalancedAnalysis(prompt: string): Promise<AnalysisResult> {
+    switch (this.currentProvider) {
+      case 'claude':
+        return claudeService.runBalancedAnalysis(prompt);
+      case 'gemini':
+        return geminiService.runGroundedAnalysis(prompt); // Gemini's grounded = balanced
+      case 'ollama':
+        return ollamaService.runBalancedAnalysis(prompt);
+      default:
+        throw new Error(`Unknown provider: ${this.currentProvider}`);
+    }
+  }
+
+  /**
+   * Create a chat service instance for the current provider
+   */
+  createChatService(): ChatService {
+    switch (this.currentProvider) {
+      case 'claude':
+        return claudeService.createChatService();
+      case 'gemini':
+        return geminiService.createChatService();
+      case 'ollama':
+        return ollamaService.createChatService();
+      default:
+        throw new Error(`Unknown provider: ${this.currentProvider}`);
+    }
+  }
+
+  /**
+   * Check if the current provider is properly configured
+   */
+  async checkProviderAvailability(): Promise<{ available: boolean; message: string }> {
+    try {
+      switch (this.currentProvider) {
+        case 'claude':
+          // Check if API key is set
+          const claudeKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+          if (!claudeKey) {
+            return {
+              available: false,
+              message: 'Claude API key not set. Add VITE_ANTHROPIC_API_KEY to .env.local'
+            };
+          }
+          return { available: true, message: 'Claude is ready' };
+
+        case 'gemini':
+          // Check if API key is set
+          const geminiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+          if (!geminiKey) {
+            return {
+              available: false,
+              message: 'Gemini API key not set. Add VITE_GOOGLE_API_KEY to .env.local (Get free key from Google AI Studio)'
+            };
+          }
+          return { available: true, message: 'Gemini is ready (FREE tier available!)' };
+
+        case 'ollama':
+          // Check if Ollama is running
+          const isAvailable = await ollamaService.checkOllamaAvailable();
+          if (!isAvailable) {
+            return {
+              available: false,
+              message: 'Ollama is not running. Start Ollama or change the VITE_OLLAMA_BASE_URL in .env.local'
+            };
+          }
+          const models = await ollamaService.getAvailableModels();
+          return {
+            available: true,
+            message: `Ollama is ready with ${models.length} model(s): ${models.slice(0, 3).join(', ')}${models.length > 3 ? '...' : ''}`
+          };
+
+        default:
+          return { available: false, message: 'Unknown provider' };
+      }
+    } catch (error) {
+      return {
+        available: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Get models available for the current provider
+   */
+  getAvailableModels(): ModelInfo[] {
+    return AVAILABLE_MODELS.filter(model => model.provider === this.currentProvider);
+  }
+}
+
+/**
+ * Create a singleton provider manager instance
+ */
+let providerManager: AIProviderManager | null = null;
+
+export function getProviderManager(): AIProviderManager {
+  if (!providerManager) {
+    // Default to Claude, but can be changed by user
+    const savedProvider = localStorage.getItem('ai-provider') as AIProvider;
+    providerManager = new AIProviderManager(savedProvider || 'claude');
+  }
+  return providerManager;
+}
+
+/**
+ * Set and persist the AI provider choice
+ */
+export function setAIProvider(provider: AIProvider): void {
+  localStorage.setItem('ai-provider', provider);
+  const manager = getProviderManager();
+  manager.setProvider(provider);
+}
+
+/**
+ * Get all available models across all providers
+ */
+export function getAllModels(): ModelInfo[] {
+  return AVAILABLE_MODELS;
+}
+
+/**
+ * Get models filtered by provider
+ */
+export function getModelsByProvider(provider: AIProvider): ModelInfo[] {
+  return AVAILABLE_MODELS.filter(model => model.provider === provider);
+}

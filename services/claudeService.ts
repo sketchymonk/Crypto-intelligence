@@ -145,6 +145,9 @@ export async function runSonnetThinkingAnalysis(prompt: string): Promise<Analysi
 // Keep backward compatibility with old function name
 export const runGroundedAnalysis = runFastAnalysis;
 
+// Alias for balanced analysis
+export const runBalancedAnalysis = runSonnetThinkingAnalysis;
+
 /**
  * Chat service for interactive conversations with Claude
  */
