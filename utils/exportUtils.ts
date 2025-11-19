@@ -1,276 +1,721 @@
 import { SavedAnalysis } from '../types';
+import { marked } from 'marked';
 
 /**
- * Utility functions for exporting analyses to various formats
+ * Professional Investment Report Generator
+ * Creates institutional-grade research reports with sophisticated styling
  */
 
 /**
- * Generate HTML content for an analysis
+ * Parse and format markdown content with professional styling
+ */
+function parseMarkdown(markdown: string): string {
+  // Configure marked for better output
+  marked.setOptions({
+    gfm: true,
+    breaks: true,
+    headerIds: true,
+  });
+
+  // Parse markdown to HTML
+  let html = marked.parse(markdown) as string;
+
+  // Enhance tables
+  html = html.replace(/<table>/g, '<table class="data-table">');
+
+  // Enhance blockquotes
+  html = html.replace(/<blockquote>/g, '<blockquote class="callout-box">');
+
+  // Style risk indicators
+  html = html.replace(/🟢\s*(LOW|Low)/g, '<span class="risk-badge risk-low">🟢 LOW</span>');
+  html = html.replace(/🟡\s*(MEDIUM|Medium)/g, '<span class="risk-badge risk-medium">🟡 MEDIUM</span>');
+  html = html.replace(/🔴\s*(HIGH|High)/g, '<span class="risk-badge risk-high">🔴 HIGH</span>');
+  html = html.replace(/⚠️\s*(CRITICAL|Critical)/g, '<span class="risk-badge risk-critical">⚠️ CRITICAL</span>');
+
+  // Style recommendations
+  html = html.replace(/\b(BUY|Buy)\b/g, '<span class="recommendation-buy">BUY</span>');
+  html = html.replace(/\b(HOLD|Hold)\b/g, '<span class="recommendation-hold">HOLD</span>');
+  html = html.replace(/\b(SELL|Sell)\b/g, '<span class="recommendation-sell">SELL</span>');
+  html = html.replace(/\b(AVOID|Avoid)\b/g, '<span class="recommendation-avoid">AVOID</span>');
+
+  // Enhance strong emphasis
+  html = html.replace(/<strong>(.*?)<\/strong>/g, '<strong class="highlight">$1</strong>');
+
+  return html;
+}
+
+/**
+ * Generate professional HTML report
  */
 export function generateAnalysisHTML(analysis: SavedAnalysis): string {
-  const date = new Date(analysis.timestamp).toLocaleString();
-  const providerIcons: Record<string, string> = {
-    claude: '🧠',
-    gemini: '💎',
-    ollama: '🦙'
+  const date = new Date(analysis.timestamp);
+  const formattedDate = date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const formattedTime = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const metadata = getAnalysisMetadata(analysis.response);
+  const contentHtml = parseMarkdown(analysis.response);
+
+  const providerNames: Record<string, string> = {
+    claude: 'Claude AI',
+    gemini: 'Gemini AI',
+    ollama: 'Ollama'
   };
 
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${analysis.projectName} - Crypto Analysis Report</title>
+    <title>${analysis.projectName} - Investment Research Report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+
     <style>
+        /* ========================================
+           PROFESSIONAL INVESTMENT REPORT STYLING
+           ======================================== */
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
+        :root {
+            /* Color Palette - Professional Investment Theme */
+            --primary-navy: #0A1F44;
+            --primary-blue: #1E3A8A;
+            --accent-gold: #D4AF37;
+            --accent-teal: #0891B2;
+            --text-primary: #1F2937;
+            --text-secondary: #4B5563;
+            --text-muted: #6B7280;
+            --bg-white: #FFFFFF;
+            --bg-gray-50: #F9FAFB;
+            --bg-gray-100: #F3F4F6;
+            --border-gray: #E5E7EB;
+            --border-gray-dark: #D1D5DB;
+
+            /* Risk Colors */
+            --risk-low: #10B981;
+            --risk-medium: #F59E0B;
+            --risk-high: #EF4444;
+            --risk-critical: #991B1B;
+
+            /* Recommendation Colors */
+            --rec-buy: #059669;
+            --rec-hold: #0891B2;
+            --rec-sell: #DC2626;
+        }
+
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #1a1a1a;
-            background: #f5f5f5;
-            padding: 20px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background: var(--bg-gray-50);
+            padding: 0;
         }
-        .container {
-            max-width: 900px;
+
+        .report-container {
+            max-width: 210mm;
             margin: 0 auto;
-            background: white;
-            padding: 40px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-radius: 8px;
+            background: var(--bg-white);
+            box-shadow: 0 0 30px rgba(0,0,0,0.08);
         }
-        .header {
-            border-bottom: 3px solid #8b5cf6;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+
+        /* ========================================
+           HEADER & COVER PAGE
+           ======================================== */
+
+        .report-header {
+            background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-blue) 100%);
+            color: white;
+            padding: 60px 50px;
+            position: relative;
+            overflow: hidden;
         }
-        .header h1 {
-            color: #8b5cf6;
-            font-size: 2.5em;
-            margin-bottom: 10px;
+
+        .report-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%);
+            border-radius: 50%;
         }
-        .header .subtitle {
-            color: #666;
-            font-size: 1.1em;
+
+        .company-logo {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 40px;
+            color: var(--accent-gold);
         }
-        .metadata {
-            background: #f8f8f8;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 30px;
+
+        .report-title {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .report-subtitle {
+            font-size: 16px;
+            font-weight: 300;
+            color: rgba(255,255,255,0.9);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ========================================
+           METADATA BAR
+           ======================================== */
+
+        .metadata-bar {
+            background: var(--bg-gray-100);
+            border-top: 3px solid var(--accent-gold);
+            border-bottom: 1px solid var(--border-gray);
+            padding: 20px 50px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
         }
-        .metadata-item {
+
+        .meta-item {
             display: flex;
             flex-direction: column;
+            gap: 4px;
         }
-        .metadata-label {
-            font-size: 0.85em;
-            color: #666;
+
+        .meta-label {
+            font-size: 9px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-        .metadata-value {
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
             font-weight: 600;
-            color: #1a1a1a;
         }
-        .badge {
+
+        .meta-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .analysis-badge {
             display: inline-block;
             padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-deep { background: #6366F1; color: white; }
+        .badge-balanced { background: #0891B2; color: white; }
+        .badge-fast { background: #10B981; color: white; }
+        .badge-risk { background: #EF4444; color: white; }
+        .badge-consensus { background: #F59E0B; color: white; }
+
+        /* ========================================
+           CONTENT SECTIONS
+           ======================================== */
+
+        .report-body {
+            padding: 50px;
+        }
+
+        .content-section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .content-section h1 {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-navy);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid var(--accent-gold);
+        }
+
+        .content-section h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin: 30px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--bg-gray-100);
+        }
+
+        .content-section h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 25px 0 12px 0;
+        }
+
+        .content-section h4 {
+            font-size: 14px;
             font-weight: 600;
+            color: var(--text-secondary);
+            margin: 20px 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .content-section p {
+            margin-bottom: 16px;
+            text-align: justify;
+        }
+
+        .content-section ul, .content-section ol {
+            margin-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .content-section li {
+            margin-bottom: 8px;
+        }
+
+        .content-section strong.highlight {
+            color: var(--primary-navy);
+            font-weight: 700;
+        }
+
+        .content-section a {
+            color: var(--accent-teal);
+            text-decoration: none;
+            border-bottom: 1px solid var(--accent-teal);
+        }
+
+        .content-section a:hover {
+            border-bottom: 2px solid var(--accent-teal);
+        }
+
+        /* ========================================
+           TABLES
+           ======================================== */
+
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            border: 1px solid var(--border-gray);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        }
+
+        .data-table thead {
+            background: linear-gradient(to bottom, var(--primary-navy), var(--primary-blue));
             color: white;
         }
-        .badge-deep { background: #8b5cf6; }
-        .badge-balanced { background: #6366f1; }
-        .badge-fast { background: #10b981; }
-        .badge-risk { background: #ef4444; }
-        .badge-consensus { background: #f59e0b; }
-        .tags {
+
+        .data-table th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 2px solid var(--accent-gold);
+        }
+
+        .data-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--bg-gray-100);
+            font-size: 10.5pt;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background: var(--bg-gray-50);
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(212,175,55,0.08);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ========================================
+           SPECIAL ELEMENTS
+           ======================================== */
+
+        .executive-summary {
+            background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+            border-left: 5px solid var(--accent-teal);
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .executive-summary h2 {
+            color: var(--primary-navy);
+            border-bottom: none;
+            margin-top: 0;
+        }
+
+        .callout-box {
+            background: var(--bg-gray-50);
+            border-left: 4px solid var(--accent-gold);
+            padding: 20px 24px;
+            margin: 24px 0;
+            border-radius: 4px;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        .key-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .metric-card {
+            background: var(--bg-white);
+            border: 2px solid var(--border-gray);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .metric-card:hover {
+            border-color: var(--accent-teal);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary-navy);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* ========================================
+           RISK & RECOMMENDATION BADGES
+           ======================================== */
+
+        .risk-badge, .recommendation-buy, .recommendation-hold,
+        .recommendation-sell, .recommendation-avoid {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin: 0 4px;
+        }
+
+        .risk-low {
+            background: rgba(16,185,129,0.15);
+            color: var(--risk-low);
+            border: 2px solid var(--risk-low);
+        }
+
+        .risk-medium {
+            background: rgba(245,158,11,0.15);
+            color: var(--risk-medium);
+            border: 2px solid var(--risk-medium);
+        }
+
+        .risk-high {
+            background: rgba(239,68,68,0.15);
+            color: var(--risk-high);
+            border: 2px solid var(--risk-high);
+        }
+
+        .risk-critical {
+            background: rgba(153,27,27,0.15);
+            color: var(--risk-critical);
+            border: 2px solid var(--risk-critical);
+        }
+
+        .recommendation-buy {
+            background: var(--rec-buy);
+            color: white;
+            box-shadow: 0 2px 4px rgba(5,150,105,0.3);
+        }
+
+        .recommendation-hold {
+            background: var(--rec-hold);
+            color: white;
+            box-shadow: 0 2px 4px rgba(8,145,178,0.3);
+        }
+
+        .recommendation-sell {
+            background: var(--rec-sell);
+            color: white;
+            box-shadow: 0 2px 4px rgba(220,38,38,0.3);
+        }
+
+        .recommendation-avoid {
+            background: var(--risk-critical);
+            color: white;
+            box-shadow: 0 2px 4px rgba(153,27,27,0.3);
+        }
+
+        /* ========================================
+           FOOTER
+           ======================================== */
+
+        .report-footer {
+            background: var(--bg-gray-100);
+            border-top: 3px solid var(--accent-gold);
+            padding: 30px 50px;
+            margin-top: 50px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .footer-section h4 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .footer-section p {
+            font-size: 10px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .disclaimer {
+            background: var(--bg-white);
+            border: 1px solid var(--border-gray);
+            border-radius: 4px;
+            padding: 16px;
+            margin-top: 20px;
+            font-size: 9px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .disclaimer strong {
+            color: var(--text-secondary);
+        }
+
+        .report-id {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-gray);
+            font-size: 9px;
+            color: var(--text-muted);
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ========================================
+           TAGS
+           ======================================== */
+
+        .tags-container {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-top: 5px;
+            margin: 20px 0;
         }
+
         .tag {
-            background: #e0e7ff;
-            color: #4338ca;
-            padding: 3px 10px;
-            border-radius: 10px;
-            font-size: 0.85em;
+            background: var(--bg-gray-100);
+            border: 1px solid var(--border-gray);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
         }
-        .section {
-            margin-bottom: 30px;
-        }
-        .section h2 {
-            color: #1a1a1a;
-            font-size: 1.8em;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e5e7eb;
-        }
-        .section h3 {
-            color: #374151;
-            font-size: 1.3em;
-            margin: 20px 0 10px 0;
-        }
-        .content {
-            color: #374151;
-            white-space: pre-wrap;
-            line-height: 1.8;
-        }
-        .prompt-box {
-            background: #f9fafb;
-            border-left: 4px solid #8b5cf6;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-        .notes-box {
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-            text-align: center;
-            color: #9ca3af;
-            font-size: 0.9em;
-        }
+
+        /* ========================================
+           PRINT STYLES
+           ======================================== */
+
         @media print {
             body {
                 background: white;
-                padding: 0;
             }
-            .container {
+
+            .report-container {
+                max-width: 100%;
                 box-shadow: none;
-                padding: 20px;
+            }
+
+            .content-section {
+                page-break-inside: avoid;
+            }
+
+            .content-section h1,
+            .content-section h2 {
+                page-break-after: avoid;
+            }
+
+            .data-table {
+                page-break-inside: avoid;
+            }
+
+            a {
+                color: inherit;
+                text-decoration: underline;
             }
         }
+
+        /* ========================================
+           RESPONSIVE
+           ======================================== */
+
         @media (max-width: 768px) {
-            .container {
-                padding: 20px;
+            .report-header,
+            .report-body,
+            .metadata-bar,
+            .report-footer {
+                padding: 30px 20px;
             }
-            .header h1 {
-                font-size: 1.8em;
+
+            .report-title {
+                font-size: 28px;
             }
-            .metadata {
+
+            .metadata-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>${analysis.projectName}${analysis.projectSymbol ? ` (${analysis.projectSymbol})` : ''}</h1>
-            <p class="subtitle">Crypto Intelligence Analysis Report</p>
+    <div class="report-container">
+        <!-- HEADER -->
+        <div class="report-header">
+            <div class="company-logo">CRYPTOINTEL</div>
+            <h1 class="report-title">${analysis.projectName}${analysis.projectSymbol ? ` (${analysis.projectSymbol.toUpperCase()})` : ''}</h1>
+            <p class="report-subtitle">Institutional Investment Research Report</p>
         </div>
 
-        <div class="metadata">
-            <div class="metadata-item">
-                <span class="metadata-label">Analysis Date</span>
-                <span class="metadata-value">${date}</span>
+        <!-- METADATA BAR -->
+        <div class="metadata-bar">
+            <div class="meta-item">
+                <span class="meta-label">Report Date</span>
+                <span class="meta-value">${formattedDate}</span>
             </div>
-            <div class="metadata-item">
-                <span class="metadata-label">Analysis Type</span>
-                <span class="metadata-value">
-                    <span class="badge badge-${analysis.analysisType}">${analysis.analysisType.toUpperCase()}</span>
+            <div class="meta-item">
+                <span class="meta-label">Time</span>
+                <span class="meta-value">${formattedTime} UTC</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Analysis Type</span>
+                <span class="meta-value">
+                    <span class="analysis-badge badge-${analysis.analysisType}">${analysis.analysisType.toUpperCase()}</span>
                 </span>
             </div>
-            <div class="metadata-item">
-                <span class="metadata-label">AI Provider</span>
-                <span class="metadata-value">${providerIcons[analysis.provider] || '🤖'} ${analysis.provider.charAt(0).toUpperCase() + analysis.provider.slice(1)}</span>
+            <div class="meta-item">
+                <span class="meta-label">AI Engine</span>
+                <span class="meta-value">${providerNames[analysis.provider] || 'AI Analysis'}</span>
             </div>
-            <div class="metadata-item">
-                <span class="metadata-label">Report Length</span>
-                <span class="metadata-value">${analysis.response.split(/\s+/).length.toLocaleString()} words</span>
+            <div class="meta-item">
+                <span class="meta-label">Report Length</span>
+                <span class="meta-value">${metadata.wordCount.toLocaleString()} words</span>
             </div>
-            ${analysis.tags && analysis.tags.length > 0 ? `
-            <div class="metadata-item" style="grid-column: 1 / -1;">
-                <span class="metadata-label">Tags</span>
-                <div class="tags">
-                    ${analysis.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
-                </div>
+            <div class="meta-item">
+                <span class="meta-label">Reading Time</span>
+                <span class="meta-value">${metadata.readingTime} minutes</span>
+            </div>
+        </div>
+
+        ${analysis.tags && analysis.tags.length > 0 ? `
+        <div class="report-body">
+            <div class="tags-container">
+                ${analysis.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+            </div>
+        </div>
+        ` : ''}
+
+        <!-- MAIN CONTENT -->
+        <div class="report-body">
+            ${analysis.notes ? `
+            <div class="callout-box">
+                <strong>Analyst Notes:</strong> ${analysis.notes}
             </div>
             ` : ''}
-        </div>
 
-        ${analysis.notes ? `
-        <div class="notes-box">
-            <h3>📝 Notes</h3>
-            <p>${analysis.notes}</p>
-        </div>
-        ` : ''}
-
-        <div class="section">
-            <h2>📊 Analysis Results</h2>
-            <div class="content">${escapeHtml(analysis.response)}</div>
-        </div>
-
-        ${analysis.consensusResults && analysis.consensusResults.length > 0 ? `
-        <div class="section">
-            <h2>🤝 Consensus Analysis (Multiple Providers)</h2>
-            ${analysis.consensusResults.map(result => `
-                <div class="prompt-box">
-                    <h3>${providerIcons[result.provider] || '🤖'} ${result.provider.charAt(0).toUpperCase() + result.provider.slice(1)} Analysis</h3>
-                    <div class="content">${escapeHtml(result.response)}</div>
-                </div>
-            `).join('')}
-        </div>
-        ` : ''}
-
-        <div class="section">
-            <h2>📝 Research Prompt</h2>
-            <div class="prompt-box">
-                <div class="content">${escapeHtml(analysis.prompt)}</div>
+            <div class="content-section">
+                ${contentHtml}
             </div>
         </div>
 
-        ${analysis.groundingChunks && analysis.groundingChunks.length > 0 ? `
-        <div class="section">
-            <h2>🔗 Sources</h2>
-            <ul>
-                ${analysis.groundingChunks.map(chunk =>
-                    chunk.web ? `<li><a href="${chunk.web.uri}" target="_blank">${chunk.web.title || chunk.web.uri}</a></li>` : ''
-                ).join('')}
-            </ul>
-        </div>
-        ` : ''}
+        <!-- FOOTER -->
+        <div class="report-footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>About This Report</h4>
+                    <p>This report was generated using CryptoIntel's advanced AI-powered research platform. All analysis is provided for informational purposes and represents the output of sophisticated artificial intelligence models trained on comprehensive market data.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Methodology</h4>
+                    <p>Analysis conducted using ${providerNames[analysis.provider]} with ${analysis.analysisType} mode. Report incorporates fundamental analysis, technical indicators, on-chain metrics, and market sentiment data.</p>
+                </div>
+            </div>
 
-        <div class="footer">
-            <p>Generated by CryptoIntel - AI-Powered Crypto Research Tool</p>
-            <p>Report ID: ${analysis.id}</p>
+            <div class="disclaimer">
+                <strong>IMPORTANT DISCLAIMER:</strong> This report is for informational and educational purposes only and does not constitute financial, investment, or trading advice. Cryptocurrency investments carry significant risk. Past performance does not guarantee future results. Always conduct your own research and consult with qualified financial advisors before making investment decisions. CryptoIntel and its AI models do not guarantee accuracy or completeness of information. Market conditions can change rapidly.
+            </div>
+
+            <div class="report-id">
+                Report ID: ${analysis.id} | Generated: ${date.toISOString()} | CryptoIntel Research Platform
+            </div>
         </div>
     </div>
 </body>
-</html>
-`;
+</html>`;
 }
 
 /**
- * Escape HTML special characters to prevent XSS
- */
-function escapeHtml(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML.replace(/\n/g, '<br>');
-}
-
-/**
- * Download analysis as HTML file
+ * Download analysis as professional HTML file
  */
 export function downloadAsHTML(analysis: SavedAnalysis): void {
   const html = generateAnalysisHTML(analysis);
@@ -278,7 +723,8 @@ export function downloadAsHTML(analysis: SavedAnalysis): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${analysis.projectName.replace(/[^a-z0-9]/gi, '_')}_analysis_${Date.now()}.html`;
+  const fileName = `CryptoIntel_${analysis.projectName.replace(/[^a-z0-9]/gi, '_')}_Report_${new Date(analysis.timestamp).toISOString().split('T')[0]}.html`;
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -286,7 +732,7 @@ export function downloadAsHTML(analysis: SavedAnalysis): void {
 }
 
 /**
- * Open analysis in new window for printing as PDF
+ * Export as PDF (opens print dialog)
  */
 export function exportAsPDF(analysis: SavedAnalysis): void {
   const html = generateAnalysisHTML(analysis);
@@ -296,14 +742,13 @@ export function exportAsPDF(analysis: SavedAnalysis): void {
     printWindow.document.write(html);
     printWindow.document.close();
 
-    // Wait for content to load, then trigger print dialog
     printWindow.onload = () => {
       setTimeout(() => {
         printWindow.print();
-      }, 250);
+      }, 500);
     };
   } else {
-    alert('Please allow pop-ups to export as PDF');
+    alert('Please allow pop-ups to export as PDF. Use browser\'s print-to-PDF feature for best results.');
   }
 }
 
@@ -316,7 +761,6 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     return true;
   } catch (err) {
     console.error('Failed to copy:', err);
-    // Fallback for older browsers
     const textArea = document.createElement('textarea');
     textArea.value = text;
     textArea.style.position = 'fixed';
@@ -339,15 +783,15 @@ export async function copyToClipboard(text: string): Promise<boolean> {
  */
 export function getAnalysisMetadata(text: string): {
   wordCount: number;
-  readingTime: number; // in minutes
+  readingTime: number;
   characterCount: number;
   estimatedTokens: number;
 } {
   const words = text.trim().split(/\s+/);
   const wordCount = words.length;
   const characterCount = text.length;
-  const readingTime = Math.ceil(wordCount / 200); // Average reading speed: 200 words/minute
-  const estimatedTokens = Math.ceil(wordCount * 1.3); // Rough estimate: 1 token ≈ 0.75 words
+  const readingTime = Math.ceil(wordCount / 200);
+  const estimatedTokens = Math.ceil(wordCount * 1.3);
 
   return {
     wordCount,
