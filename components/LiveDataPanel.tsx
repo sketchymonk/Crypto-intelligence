@@ -292,6 +292,7 @@ const LiveDataPanel: React.FC<LiveDataPanelProps> = ({ coinId: initialCoinId, on
                         setChartData(data);
                       } catch (err) {
                         console.error('Failed to load chart data:', err);
+                        setError(err instanceof Error ? err.message : 'Failed to load chart data');
                       } finally {
                         setChartLoading(false);
                       }
@@ -302,8 +303,9 @@ const LiveDataPanel: React.FC<LiveDataPanelProps> = ({ coinId: initialCoinId, on
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
                     } ${chartLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title={days === 'max' ? '1 Year (Free tier limit: 365 days)' : `${days} days`}
                   >
-                    {days === 'max' ? 'All' : `${days}d`}
+                    {days === 'max' ? '1Y' : `${days}d`}
                   </button>
                 ))}
               </div>

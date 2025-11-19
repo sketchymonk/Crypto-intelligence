@@ -119,21 +119,29 @@ class CoinGeckoService {
 
   /**
    * Get historical price chart data
+   * Note: Free API is limited to 365 days of historical data
    */
   async getChartData(coinId: string, days: number | 'max' = 30): Promise<ChartDataPoint[]> {
-    const cacheKey = `chart_${coinId}_${days}`;
+    // Free tier CoinGecko API is limited to 365 days max
+    const actualDays = days === 'max' ? 365 : days;
+    const cacheKey = `chart_${coinId}_${actualDays}`;
     const cached = this.getFromCache<ChartDataPoint[]>(cacheKey);
     if (cached) return cached;
 
     try {
+      // Don't specify interval - CoinGecko auto-determines best interval based on days
       const response = await fetch(
-        `${COINGECKO_API_BASE}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}&interval=daily`,
+        `${COINGECKO_API_BASE}/coins/${coinId}/market_chart?vs_currency=usd&days=${actualDays}`,
         {
           headers: getHeaders()
         }
       );
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.error?.status?.error_code === 10012) {
+          throw new Error('Historical data limited to 365 days on free tier. Upgrade to CoinGecko Pro for full history.');
+        }
         throw new Error(`CoinGecko API error: ${response.status}`);
       }
 
