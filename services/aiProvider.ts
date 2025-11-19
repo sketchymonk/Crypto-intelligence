@@ -2,6 +2,9 @@ import { AIProvider, AnalysisResult, ChatService, ModelInfo } from '../types';
 import * as claudeService from './claudeService';
 import * as geminiService from './geminiService';
 import * as ollamaService from './ollamaService';
+import * as openrouterService from './openrouterService';
+import * as groqService from './groqService';
+import * as mistralService from './mistralService';
 
 /**
  * Available models across all providers
@@ -84,6 +87,84 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     cost: 'free',
     speed: 'fast'
   },
+
+  // OpenRouter Models (Many FREE models via aggregation)
+  {
+    id: 'openrouter-deep',
+    name: 'DeepSeek R1 (Reasoning)',
+    description: 'Advanced reasoning model with deep analysis. FREE via OpenRouter!',
+    provider: 'openrouter',
+    cost: 'free',
+    speed: 'medium'
+  },
+  {
+    id: 'openrouter-balanced',
+    name: 'DeepSeek Chat',
+    description: 'Balanced chat model for general analysis. FREE!',
+    provider: 'openrouter',
+    cost: 'free',
+    speed: 'fast'
+  },
+  {
+    id: 'openrouter-fast',
+    name: 'Gemini 2.5 Flash (via OpenRouter)',
+    description: 'Fast Google model via OpenRouter. FREE!',
+    provider: 'openrouter',
+    cost: 'free',
+    speed: 'fast'
+  },
+
+  // Groq Models (Super fast inference, FREE tier)
+  {
+    id: 'groq-deep',
+    name: 'Llama 3.3 70B (Groq)',
+    description: 'Most capable model with lightning-fast inference. FREE with generous limits!',
+    provider: 'groq',
+    cost: 'free',
+    speed: 'fast'
+  },
+  {
+    id: 'groq-balanced',
+    name: 'Mixtral 8x7B (Groq)',
+    description: 'Balanced mixture-of-experts model. FREE with ultra-fast speed!',
+    provider: 'groq',
+    cost: 'free',
+    speed: 'fast'
+  },
+  {
+    id: 'groq-fast',
+    name: 'Llama 3.1 8B Instant (Groq)',
+    description: 'Fastest model with instant responses. FREE!',
+    provider: 'groq',
+    cost: 'free',
+    speed: 'fast'
+  },
+
+  // Mistral Models (FREE tier available)
+  {
+    id: 'mistral-deep',
+    name: 'Mistral Large',
+    description: 'Most capable Mistral model. FREE tier available with rate limits!',
+    provider: 'mistral',
+    cost: 'free',
+    speed: 'medium'
+  },
+  {
+    id: 'mistral-balanced',
+    name: 'Mistral Nemo',
+    description: 'Balanced open-source model. FREE tier!',
+    provider: 'mistral',
+    cost: 'free',
+    speed: 'fast'
+  },
+  {
+    id: 'mistral-fast',
+    name: 'Mistral Small',
+    description: 'Fast and efficient model. FREE tier!',
+    provider: 'mistral',
+    cost: 'free',
+    speed: 'fast'
+  },
 ];
 
 /**
@@ -122,6 +203,12 @@ export class AIProviderManager {
         return geminiService.runDeepAnalysis(prompt);
       case 'ollama':
         return ollamaService.runDeepAnalysis(prompt);
+      case 'openrouter':
+        return openrouterService.runDeepAnalysis(prompt);
+      case 'groq':
+        return groqService.runDeepAnalysis(prompt);
+      case 'mistral':
+        return mistralService.runDeepAnalysis(prompt);
       default:
         throw new Error(`Unknown provider: ${this.currentProvider}`);
     }
@@ -138,6 +225,12 @@ export class AIProviderManager {
         return geminiService.runFastAnalysis(prompt);
       case 'ollama':
         return ollamaService.runFastAnalysis(prompt);
+      case 'openrouter':
+        return openrouterService.runFastAnalysis(prompt);
+      case 'groq':
+        return groqService.runFastAnalysis(prompt);
+      case 'mistral':
+        return mistralService.runFastAnalysis(prompt);
       default:
         throw new Error(`Unknown provider: ${this.currentProvider}`);
     }
@@ -154,6 +247,12 @@ export class AIProviderManager {
         return geminiService.runGroundedAnalysis(prompt); // Gemini's grounded = balanced
       case 'ollama':
         return ollamaService.runBalancedAnalysis(prompt);
+      case 'openrouter':
+        return openrouterService.runBalancedAnalysis(prompt);
+      case 'groq':
+        return groqService.runBalancedAnalysis(prompt);
+      case 'mistral':
+        return mistralService.runBalancedAnalysis(prompt);
       default:
         throw new Error(`Unknown provider: ${this.currentProvider}`);
     }
@@ -170,6 +269,12 @@ export class AIProviderManager {
         return geminiService.createChatService();
       case 'ollama':
         return ollamaService.createChatService();
+      case 'openrouter':
+        return openrouterService.createChatService();
+      case 'groq':
+        return groqService.createChatService();
+      case 'mistral':
+        return mistralService.createChatService();
       default:
         throw new Error(`Unknown provider: ${this.currentProvider}`);
     }
@@ -217,6 +322,36 @@ export class AIProviderManager {
             available: true,
             message: `Ollama is ready with ${models.length} model(s): ${models.slice(0, 3).join(', ')}${models.length > 3 ? '...' : ''}`
           };
+
+        case 'openrouter':
+          const hasOpenRouterKey = openrouterService.hasApiKey();
+          if (!hasOpenRouterKey) {
+            return {
+              available: false,
+              message: 'OpenRouter API key not set. Get a FREE key from openrouter.ai and configure in Settings.'
+            };
+          }
+          return { available: true, message: 'OpenRouter is ready (Many FREE models available!)' };
+
+        case 'groq':
+          const hasGroqKey = groqService.hasApiKey();
+          if (!hasGroqKey) {
+            return {
+              available: false,
+              message: 'Groq API key not set. Get a FREE key from console.groq.com and configure in Settings.'
+            };
+          }
+          return { available: true, message: 'Groq is ready (Ultra-fast inference, FREE!)' };
+
+        case 'mistral':
+          const hasMistralKey = mistralService.hasApiKey();
+          if (!hasMistralKey) {
+            return {
+              available: false,
+              message: 'Mistral API key not set. Get a FREE tier key from console.mistral.ai and configure in Settings.'
+            };
+          }
+          return { available: true, message: 'Mistral is ready (FREE tier available!)' };
 
         default:
           return { available: false, message: 'Unknown provider' };
