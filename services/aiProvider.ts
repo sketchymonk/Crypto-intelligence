@@ -36,7 +36,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
   // Gemini Models
   {
     id: 'gemini-pro-deep',
-    name: 'Gemini 2.5 Pro (Deep Thinking)',
+    name: 'Gemini 3.0 Pro (Deep Thinking)',
     description: 'Deep analysis with maximum thinking budget. FREE with Google AI Studio!',
     provider: 'gemini',
     cost: 'free',

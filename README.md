@@ -92,7 +92,7 @@ No installation required! Just:
 - **Build Tool**: Vite
 - **AI Providers**:
   - Anthropic Claude (Opus & Sonnet)
-  - Google Gemini (2.5 Pro & Flash)
+  - Google Gemini (3.0 Pro & 2.5 Flash)
   - Ollama (Local models)
 - **Styling**: Tailwind CSS (via inline classes)
 
