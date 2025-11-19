@@ -13,6 +13,9 @@ function parseMarkdown(markdown: string): string {
   // Remove duplicate "Analysis Date:" line at the start (already in metadata bar)
   let cleanedMarkdown = markdown.replace(/^Analysis Date:\s*[^\n]+\n+/i, '');
 
+  // Add special callout boxes for key sections
+  cleanedMarkdown = enhanceSpecialSections(cleanedMarkdown);
+
   // Convert key metrics sections to professional tables
   cleanedMarkdown = convertKeyMetricsToTable(cleanedMarkdown);
 
@@ -44,77 +47,212 @@ function parseMarkdown(markdown: string): string {
   html = html.replace(/\b(SELL|Sell)\b/g, '<span class="recommendation-sell">SELL</span>');
   html = html.replace(/\b(AVOID|Avoid)\b/g, '<span class="recommendation-avoid">AVOID</span>');
 
+  // Style percentage changes
+  html = html.replace(/([+-]?\d+\.?\d*%)/g, (match) => {
+    if (match.startsWith('+') || (!match.startsWith('-') && parseFloat(match) > 0)) {
+      return `<span class="percent-positive">${match}</span>`;
+    } else if (match.startsWith('-')) {
+      return `<span class="percent-negative">${match}</span>`;
+    }
+    return match;
+  });
+
+  // Style dollar amounts
+  html = html.replace(/\$[\d,]+\.?\d*/g, '<span class="dollar-amount">$&</span>');
+
   // Enhance strong emphasis
   html = html.replace(/<strong>(.*?)<\/strong>/g, '<strong class="highlight">$1</strong>');
+
+  // Add section breaks
+  html = html.replace(/<h2/g, '<div class="section-break"></div><h2');
 
   return html;
 }
 
 /**
- * Convert key metrics sections to professional HTML tables
+ * Enhance special sections with callout boxes
  */
-function convertKeyMetricsToTable(markdown: string): string {
-  // Pattern to match Key Metrics sections with bullet points
-  const keyMetricsPattern = /#{1,3}\s*(?:Key Metrics|Current Metrics|Market Metrics|Price Metrics|Token Metrics)[\s\S]*?\n((?:[-*]\s+\*\*[^*]+\*\*:[^\n]+\n?)+)/gi;
-
-  markdown = markdown.replace(keyMetricsPattern, (match, metricsContent) => {
-    // Extract individual metrics
-    const metricLines = metricsContent.match(/[-*]\s+\*\*([^*]+)\*\*:\s*([^\n]+)/g);
-
-    if (!metricLines || metricLines.length === 0) {
-      return match; // Return original if no metrics found
+function enhanceSpecialSections(markdown: string): string {
+  // Executive Summary
+  markdown = markdown.replace(
+    /#{1,3}\s*(Executive Summary|Summary|Overview)[\s\S]*?\n((?:[^\n#]|\n(?!#{1,3}\s))+)/gi,
+    (match, header, content) => {
+      return `### ${header}\n\n<div class="executive-summary-box">\n${content.trim()}\n</div>\n`;
     }
+  );
 
-    // Build table rows
-    let tableRows = '';
-    metricLines.forEach((line: string) => {
-      const metricMatch = line.match(/[-*]\s+\*\*([^*]+)\*\*:\s*([^\n]+)/);
-      if (metricMatch) {
-        const label = metricMatch[1].trim();
-        const value = metricMatch[2].trim();
-        tableRows += `| ${label} | ${value} |\n`;
-      }
-    });
-
-    // Get the header line
-    const headerMatch = match.match(/(#{1,3}\s*(?:Key Metrics|Current Metrics|Market Metrics|Price Metrics|Token Metrics)[^\n]*)/i);
-    const header = headerMatch ? headerMatch[1] : '### Key Metrics';
-
-    // Return formatted table
-    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
-  });
-
-  // Also handle "Dashboard" style metrics with colon format
-  const dashboardPattern = /#{1,3}\s*(?:Dashboard|Live Data|Market Data)[\s\S]*?\n((?:[-*]\s+[^:]+:[^\n]+\n?){3,})/gi;
-
-  markdown = markdown.replace(dashboardPattern, (match, metricsContent) => {
-    // Extract individual metrics
-    const metricLines = metricsContent.match(/[-*]\s+([^:]+):\s*([^\n]+)/g);
-
-    if (!metricLines || metricLines.length === 0) {
-      return match;
+  // Investment Recommendation
+  markdown = markdown.replace(
+    /#{1,3}\s*(?:Investment )?Recommendation[\s\S]*?\n((?:[^\n#]|\n(?!#{1,3}\s))+)/gi,
+    (match, content) => {
+      return `### Investment Recommendation\n\n<div class="recommendation-box">\n${content.trim()}\n</div>\n`;
     }
+  );
 
-    // Build table rows
-    let tableRows = '';
-    metricLines.forEach((line: string) => {
-      const metricMatch = line.match(/[-*]\s+([^:]+):\s*([^\n]+)/);
-      if (metricMatch) {
-        const label = metricMatch[1].trim().replace(/\*\*/g, ''); // Remove any bold markers
-        const value = metricMatch[2].trim();
-        tableRows += `| ${label} | ${value} |\n`;
-      }
-    });
+  // Key Takeaways / TL;DR
+  markdown = markdown.replace(
+    /#{1,3}\s*(?:Key Takeaways|TL;?DR|Quick Summary)[\s\S]*?\n((?:[^\n#]|\n(?!#{1,3}\s))+)/gi,
+    (match, header, content) => {
+      return `### ${header}\n\n<div class="takeaway-box">\n${content.trim()}\n</div>\n`;
+    }
+  );
 
-    // Get the header line
-    const headerMatch = match.match(/(#{1,3}\s*(?:Dashboard|Live Data|Market Data)[^\n]*)/i);
-    const header = headerMatch ? headerMatch[1] : '### Market Data';
-
-    // Return formatted table
-    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
-  });
+  // Warnings / Red Flags
+  markdown = markdown.replace(
+    /#{1,3}\s*(?:⚠️\s*)?(?:Warnings?|Red Flags?|Caution)[\s\S]*?\n((?:[^\n#]|\n(?!#{1,3}\s))+)/gi,
+    (match, content) => {
+      return `### ⚠️ Warnings\n\n<div class="warning-box">\n${content.trim()}\n</div>\n`;
+    }
+  );
 
   return markdown;
+}
+
+/**
+ * Convert sections with data to professional HTML tables
+ */
+function convertKeyMetricsToTable(markdown: string): string {
+  // Extended pattern for all data-heavy sections that should be tables
+  const tableSections = [
+    'Key Metrics', 'Current Metrics', 'Market Metrics', 'Price Metrics', 'Token Metrics',
+    'Dashboard', 'Live Data', 'Market Data', 'Trading Metrics',
+    'Tokenomics', 'Token Distribution', 'Supply Metrics',
+    'Technical Indicators', 'Technical Analysis', 'On-Chain Metrics',
+    'Fundamental Metrics', 'Financial Metrics', 'Performance Metrics',
+    'Risk Metrics', 'Risk Assessment', 'Risk Breakdown', 'Risk Categories',
+    'Competitive Analysis', 'Competitor Comparison', 'Market Position',
+    'Team Metrics', 'Development Metrics', 'GitHub Metrics',
+    'Social Metrics', 'Community Metrics', 'Engagement Metrics',
+    'Valuation Metrics', 'Price Analysis', 'Historical Performance'
+  ];
+
+  const sectionsRegex = tableSections.join('|');
+
+  // Pattern 1: Sections with bold key-value pairs
+  const keyValuePattern = new RegExp(`#{1,3}\\s*(?:${sectionsRegex})[\\s\\S]*?\\n((?:[-*]\\s+\\*\\*[^*]+\\*\\*:[^\\n]+\\n?)+)`, 'gi');
+
+  markdown = markdown.replace(keyValuePattern, (match, content) => {
+    const lines = content.match(/[-*]\s+\*\*([^*]+)\*\*:\s*([^\n]+)/g);
+    if (!lines || lines.length === 0) return match;
+
+    let tableRows = '';
+    lines.forEach((line: string) => {
+      const lineMatch = line.match(/[-*]\s+\*\*([^*]+)\*\*:\s*([^\n]+)/);
+      if (lineMatch) {
+        tableRows += `| ${lineMatch[1].trim()} | ${lineMatch[2].trim()} |\n`;
+      }
+    });
+
+    const headerMatch = match.match(/(#{1,3}\s*[^\n]+)/i);
+    const header = headerMatch ? headerMatch[1] : '### Metrics';
+
+    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
+  });
+
+  // Pattern 2: Simple colon-separated key-value lists (3+ items)
+  const colonPattern = new RegExp(`#{1,3}\\s*(?:${sectionsRegex})[\\s\\S]*?\\n((?:[-*]\\s+[^:]+:[^\\n]+\\n?){3,})`, 'gi');
+
+  markdown = markdown.replace(colonPattern, (match, content) => {
+    const lines = content.match(/[-*]\s+([^:]+):\s*([^\n]+)/g);
+    if (!lines || lines.length === 0) return match;
+
+    let tableRows = '';
+    lines.forEach((line: string) => {
+      const lineMatch = line.match(/[-*]\s+([^:]+):\s*([^\n]+)/);
+      if (lineMatch) {
+        const label = lineMatch[1].trim().replace(/\*\*/g, '');
+        tableRows += `| ${label} | ${lineMatch[2].trim()} |\n`;
+      }
+    });
+
+    const headerMatch = match.match(/(#{1,3}\s*[^\n]+)/i);
+    const header = headerMatch ? headerMatch[1] : '### Data';
+
+    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
+  });
+
+  // Pattern 3: Pros and Cons sections
+  markdown = convertProsConsToTable(markdown);
+
+  // Pattern 4: Risk assessment with ratings
+  markdown = convertRiskAssessmentToTable(markdown);
+
+  // Pattern 5: Comparison lists (vs, compared to, etc.)
+  markdown = convertComparisonToTable(markdown);
+
+  return markdown;
+}
+
+/**
+ * Convert Pros and Cons sections to side-by-side table
+ */
+function convertProsConsToTable(markdown: string): string {
+  const prosConsPattern = /#{1,3}\s*(Pros|Strengths|Advantages)[\s\S]*?\n((?:[-*]\s+[^\n]+\n?)+)[\s\S]*?#{1,3}\s*(Cons|Weaknesses|Disadvantages|Risks)[\s\S]*?\n((?:[-*]\s+[^\n]+\n?)+)/gi;
+
+  return markdown.replace(prosConsPattern, (match, prosHeader, prosContent, consHeader, consContent) => {
+    const pros = prosContent.match(/[-*]\s+([^\n]+)/g)?.map((p: string) => p.replace(/^[-*]\s+/, '').trim()) || [];
+    const cons = consContent.match(/[-*]\s+([^\n]+)/g)?.map((c: string) => c.replace(/^[-*]\s+/, '').trim()) || [];
+
+    const maxRows = Math.max(pros.length, cons.length);
+    let tableRows = '';
+
+    for (let i = 0; i < maxRows; i++) {
+      const pro = pros[i] || '';
+      const con = cons[i] || '';
+      tableRows += `| ${pro} | ${con} |\n`;
+    }
+
+    return `### ${prosHeader} & ${consHeader}\n\n| ✅ ${prosHeader} | ❌ ${consHeader} |\n|--------|--------|\n${tableRows}\n`;
+  });
+}
+
+/**
+ * Convert Risk Assessment sections to table
+ */
+function convertRiskAssessmentToTable(markdown: string): string {
+  const riskPattern = /#{1,3}\s*Risk Assessment[\s\S]*?\n((?:[-*]\s+\*\*[^:]+\*\*:?\s*[🟢🟡🔴⚠️]?\s*(?:LOW|MEDIUM|HIGH|CRITICAL)[^\n]*\n?)+)/gi;
+
+  return markdown.replace(riskPattern, (match, content) => {
+    const lines = content.match(/[-*]\s+\*\*([^:]+)\*\*:?\s*([🟢🟡🔴⚠️]?\s*(?:LOW|MEDIUM|HIGH|CRITICAL)[^\n]*)/gi);
+    if (!lines || lines.length === 0) return match;
+
+    let tableRows = '';
+    lines.forEach((line: string) => {
+      const lineMatch = line.match(/[-*]\s+\*\*([^:]+)\*\*:?\s*([🟢🟡🔴⚠️]?\s*(?:LOW|MEDIUM|HIGH|CRITICAL)[^\n]*)/i);
+      if (lineMatch) {
+        const category = lineMatch[1].trim();
+        const rating = lineMatch[2].trim();
+        tableRows += `| ${category} | ${rating} |\n`;
+      }
+    });
+
+    return `### Risk Assessment\n\n| Risk Category | Rating |\n|--------------|--------|\n${tableRows}\n`;
+  });
+}
+
+/**
+ * Convert comparison lists to table
+ */
+function convertComparisonToTable(markdown: string): string {
+  const comparisonPattern = /#{1,3}\s*(?:Competitive Analysis|Competitor Comparison|vs\.|Comparison)[\s\S]*?\n((?:[-*]\s+\*\*[^:]+\*\*:[^\n]+\n?){2,})/gi;
+
+  return markdown.replace(comparisonPattern, (match, content) => {
+    const lines = content.match(/[-*]\s+\*\*([^:]+)\*\*:\s*([^\n]+)/g);
+    if (!lines || lines.length === 0) return match;
+
+    let tableRows = '';
+    lines.forEach((line: string) => {
+      const lineMatch = line.match(/[-*]\s+\*\*([^:]+)\*\*:\s*([^\n]+)/);
+      if (lineMatch) {
+        tableRows += `| ${lineMatch[1].trim()} | ${lineMatch[2].trim()} |\n`;
+      }
+    });
+
+    const headerMatch = match.match(/(#{1,3}\s*[^\n]+)/i);
+    const header = headerMatch ? headerMatch[1] : '### Comparison';
+
+    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
+  });
 }
 
 /**
@@ -478,15 +616,77 @@ export function generateAnalysisHTML(analysis: SavedAnalysis, includeProvenance:
         .content-section p {
             margin-bottom: 16px;
             text-align: justify;
+            line-height: 1.8;
         }
 
-        .content-section ul, .content-section ol {
-            margin-left: 20px;
-            margin-bottom: 16px;
+        /* Enhanced bullet points */
+        .content-section ul {
+            margin-left: 0;
+            margin-bottom: 20px;
+            padding-left: 0;
+            list-style: none;
         }
 
-        .content-section li {
+        .content-section ul li {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 12px;
+            line-height: 1.7;
+        }
+
+        .content-section ul li::before {
+            content: '▸';
+            position: absolute;
+            left: 8px;
+            color: var(--accent-teal);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        /* Nested lists */
+        .content-section ul ul {
+            margin-top: 8px;
             margin-bottom: 8px;
+        }
+
+        .content-section ul ul li::before {
+            content: '◦';
+            color: var(--primary-blue);
+        }
+
+        /* Enhanced numbered lists */
+        .content-section ol {
+            margin-left: 0;
+            margin-bottom: 20px;
+            padding-left: 0;
+            list-style: none;
+            counter-reset: item;
+        }
+
+        .content-section ol li {
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 14px;
+            line-height: 1.7;
+            counter-increment: item;
+        }
+
+        .content-section ol li::before {
+            content: counter(item);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: linear-gradient(135deg, var(--primary-navy), var(--primary-blue));
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .content-section strong.highlight {
@@ -498,10 +698,147 @@ export function generateAnalysisHTML(analysis: SavedAnalysis, includeProvenance:
             color: var(--accent-teal);
             text-decoration: none;
             border-bottom: 1px solid var(--accent-teal);
+            transition: all 0.2s;
         }
 
         .content-section a:hover {
             border-bottom: 2px solid var(--accent-teal);
+            color: var(--primary-blue);
+        }
+
+        /* Professional highlight boxes */
+        .content-section blockquote {
+            margin: 24px 0;
+        }
+
+        /* Executive Summary special styling */
+        .content-section > h2:first-of-type + p,
+        .content-section > h1:first-of-type + p {
+            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+            border-left: 4px solid var(--primary-blue);
+            padding: 20px 24px;
+            margin: 24px 0;
+            border-radius: 4px;
+            font-size: 11pt;
+            line-height: 1.8;
+        }
+
+        /* Key takeaways boxes */
+        .content-section p strong:first-child {
+            color: var(--primary-navy);
+        }
+
+        /* Section dividers */
+        .content-section hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+            margin: 40px 0;
+        }
+
+        .section-break {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-gray), transparent);
+            margin: 30px 0;
+        }
+
+        /* ========================================
+           SPECIAL CALLOUT BOXES
+           ======================================== */
+
+        .executive-summary-box {
+            background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+            border-left: 5px solid var(--accent-teal);
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin: 24px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            position: relative;
+        }
+
+        .executive-summary-box::before {
+            content: '📊';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 32px;
+            opacity: 0.3;
+        }
+
+        .recommendation-box {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+            border: 2px solid var(--accent-gold);
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin: 24px 0;
+            box-shadow: 0 4px 12px rgba(212,175,55,0.15);
+            position: relative;
+        }
+
+        .recommendation-box::before {
+            content: '💡';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 32px;
+            opacity: 0.4;
+        }
+
+        .takeaway-box {
+            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+            border: 2px solid var(--primary-blue);
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin: 24px 0;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.1);
+        }
+
+        .takeaway-box::before {
+            content: '✨';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 28px;
+            opacity: 0.3;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
+            border-left: 5px solid #EF4444;
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin: 24px 0;
+            box-shadow: 0 2px 8px rgba(239,68,68,0.1);
+            position: relative;
+        }
+
+        .warning-box::before {
+            content: '⚠️';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 32px;
+            opacity: 0.4;
+        }
+
+        /* ========================================
+           INLINE STYLING ENHANCEMENTS
+           ======================================== */
+
+        .percent-positive {
+            color: #059669;
+            font-weight: 600;
+        }
+
+        .percent-negative {
+            color: #DC2626;
+            font-weight: 600;
+        }
+
+        .dollar-amount {
+            font-weight: 600;
+            color: var(--primary-navy);
+            font-variant-numeric: tabular-nums;
         }
 
         /* ========================================
