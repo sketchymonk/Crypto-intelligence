@@ -8,6 +8,7 @@ import OutputDisplay from './components/OutputDisplay';
 import ChatBot from './components/ChatBot';
 import ProviderSelector from './components/ProviderSelector';
 import Settings from './components/Settings';
+import SavedPrompts from './components/SavedPrompts';
 import { TEMPLATES, getTemplateById } from './templates';
 import { generateGuardrailInstructions } from './guardrails';
 import { generateFeatureSuggestions, formatFeatureSuggestionsMarkdown } from './featureSuggestions';
@@ -21,6 +22,7 @@ const App: React.FC = () => {
   const [activeAnalysis, setActiveAnalysis] = useState<'deep' | 'fast' | 'balanced' | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSavedPromptsOpen, setIsSavedPromptsOpen] = useState(false);
   const [error, setError] = useState('');
   const [currentProvider, setCurrentProvider] = useState<AIProvider>('claude');
   const [providerAvailable, setProviderAvailable] = useState(true);
@@ -65,6 +67,16 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLoadSavedPrompt = (loadedFormData: FormData) => {
+    setFormData(loadedFormData);
+    setSelectedTemplate(''); // Clear template selection when loading saved prompt
+    // Clear any existing output when loading a saved prompt
+    setGeneratedPrompt('');
+    setGeminiResponse('');
+    setGroundingChunks([]);
+    setError('');
+  };
+
   const handleInputChange = useCallback((section: string, field: string, value: string | boolean | string[]) => {
     setFormData(prev => ({
       ...prev,
@@ -76,7 +88,7 @@ const App: React.FC = () => {
   }, []);
 
   const generatePromptText = () => {
-    let prompt = "## Insane Crypto Prompt 2\n\n";
+    let prompt = "## Crypto Intelligence Research\n\n";
     sections.forEach(section => {
       if (formData[section.id]) {
         prompt += `### ${section.title}\n\n`;
@@ -204,17 +216,29 @@ const App: React.FC = () => {
                 Craft expert-level research prompts and get instant AI-powered analysis.
               </p>
             </div>
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="ml-4 bg-gray-800 hover:bg-gray-700 text-gray-300 p-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
-              aria-label="Open Settings"
-              title="Settings"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
+            <div className="ml-4 flex gap-2">
+              <button
+                onClick={() => setIsSavedPromptsOpen(true)}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-300 p-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                aria-label="Saved Prompts"
+                title="Saved Prompts"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-300 p-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                aria-label="Open Settings"
+                title="Settings"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
+            </div>
           </div>
           {!providerAvailable && (
             <div className="mt-4 bg-yellow-900 border border-yellow-700 text-yellow-200 p-4 rounded-lg">
@@ -349,6 +373,13 @@ const App: React.FC = () => {
           onSettingsChange={handleSettingsChange}
           guardrailsEnabled={guardrailsEnabled}
           currentProvider={currentProvider}
+        />
+      )}
+      {isSavedPromptsOpen && (
+        <SavedPrompts
+          onClose={() => setIsSavedPromptsOpen(false)}
+          onLoad={handleLoadSavedPrompt}
+          currentFormData={formData}
         />
       )}
     </div>
