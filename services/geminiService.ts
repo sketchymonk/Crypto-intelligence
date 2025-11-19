@@ -55,7 +55,7 @@ export function getMaskedApiKey(): string | null {
 }
 
 /**
- * Runs a deep analysis using gemini-3.0-pro with maximum thinking budget.
+ * Runs a deep analysis using Gemini 2.5 Pro with maximum thinking budget.
  * @param prompt The detailed prompt for the analysis.
  * @returns A promise that resolves to an AnalysisResult.
  */
@@ -63,7 +63,7 @@ export async function runDeepAnalysis(prompt: string): Promise<AnalysisResult> {
   const ai = new GoogleGenAI({ apiKey: getApiKey() });
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.0-pro',
+      model: 'gemini-2.5-pro-latest',
       contents: prompt,
       config: {
         thinkingConfig: { thinkingBudget: 32768 },
@@ -77,7 +77,7 @@ export async function runDeepAnalysis(prompt: string): Promise<AnalysisResult> {
 }
 
 /**
- * Runs a fast analysis using gemini-2.5-flash (optimized for speed).
+ * Runs a fast analysis using Gemini 2.5 Flash (optimized for speed).
  * @param prompt The prompt for the analysis.
  * @returns A promise that resolves to an AnalysisResult.
  */
@@ -85,7 +85,7 @@ export async function runFastAnalysis(prompt: string): Promise<AnalysisResult> {
   const ai = new GoogleGenAI({ apiKey: getApiKey() });
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-latest',
       contents: prompt,
     });
     return { text: response.text };
@@ -96,7 +96,7 @@ export async function runFastAnalysis(prompt: string): Promise<AnalysisResult> {
 }
 
 /**
- * Runs a grounded analysis using gemini-2.5-flash with Google Search.
+ * Runs a grounded analysis using Gemini 2.5 Flash with Google Search.
  * This is unique to Gemini and provides real-time web search results.
  * @param prompt The prompt for the analysis.
  * @returns A promise that resolves to an AnalysisResult, including grounding sources.
@@ -105,7 +105,7 @@ export async function runGroundedAnalysis(prompt: string): Promise<AnalysisResul
   const ai = new GoogleGenAI({ apiKey: getApiKey() });
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-latest',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -142,7 +142,7 @@ export class GeminiChatService implements ChatService {
   async *sendMessageStream(message: string): AsyncGenerator<string, void, unknown> {
     if (!this.chat) {
       this.chat = this.ai.chats.create({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.5-flash-latest',
       });
     }
 
@@ -187,6 +187,6 @@ export function createChatService(): GeminiChatService {
 export function createChatSession(): Chat {
   const ai = new GoogleGenAI({ apiKey: getApiKey() });
   return ai.chats.create({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.5-flash-latest',
   });
 }

@@ -122,7 +122,7 @@ No installation required! Just:
 - **Build Tool**: Vite
 - **AI Providers**:
   - Anthropic Claude (Opus & Sonnet)
-  - Google Gemini (3.0 Pro & 2.5 Flash)
+  - Google Gemini (2.0 Flash Thinking & 2.5 Flash)
   - OpenRouter (DeepSeek R1, Llama, Mistral, 300+ models)
   - Groq (Llama 3.3 70B, Mixtral, ultra-fast inference)
   - Mistral AI (Large, Nemo, Small)
