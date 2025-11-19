@@ -28,7 +28,24 @@ A sophisticated cryptocurrency intelligence and research platform with **multipl
   - Social & Sentiment Intelligence
   - Technical/Chart Analysis
 
-## Run Locally
+## Quick Start
+
+### Option 1: Use GitHub Pages (Recommended for Easy Access)
+
+Visit the live app at: **https://sketchymonk.github.io/Crypto-intelligence/**
+
+No installation required! Just:
+1. Open the app in your browser
+2. Click the **Settings** icon (⚙️) in the top right
+3. Choose your AI provider and enter your API key:
+   - **Gemini** (FREE): Get a key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+   - **Claude** (Paid): Get a key from [Anthropic Console](https://console.anthropic.com/settings/keys)
+   - **Ollama** (Local): Configure your Ollama base URL and model
+4. Start analyzing crypto projects!
+
+**Your API keys are stored locally in your browser and never sent to any server except the respective AI provider.**
+
+### Option 2: Run Locally
 
 **Prerequisites:** Node.js (v18 or higher)
 
@@ -102,10 +119,33 @@ A sophisticated cryptocurrency intelligence and research platform with **multipl
 | **Privacy** | Cloud | Cloud | 100% Local |
 | **Setup** | API Key | API Key | Install + Model |
 
+## Deploy to GitHub Pages
+
+This repository is configured for automatic deployment to GitHub Pages.
+
+1. **Enable GitHub Pages:**
+   - Go to your repository Settings > Pages
+   - Under "Build and deployment", select "GitHub Actions" as the source
+
+2. **Push to main branch:**
+   - Any push to the `main` branch will automatically trigger a deployment
+   - The workflow builds the app and deploys it to GitHub Pages
+
+3. **Access your app:**
+   - After deployment, your app will be available at: `https://<username>.github.io/Crypto-intelligence/`
+
+## Security & Privacy
+
+- **API Key Storage:** All API keys are stored locally in your browser's localStorage
+- **No Backend:** The app makes direct calls to the respective AI provider's API from your browser
+- **No Data Collection:** No user data, prompts, or API keys are sent to any server other than the chosen AI provider
+- **Open Source:** All code is transparent and auditable in this repository
+- **Secure Deployment:** API keys are never exposed in the deployed code or committed to the repository
+
 ## Notes
 
 - **Claude**: Best quality but requires payment. Great for professional research.
 - **Gemini**: FREE with Google AI Studio! Includes real-time web search grounding.
 - **Ollama**: Completely free and private. Runs on your machine. Quality depends on model size.
-- For production use, consider implementing a backend proxy to protect API keys (for Claude/Gemini).
-- Your selected provider is saved in browser localStorage.
+- API keys can be provided through Settings (stored in browser) or via `.env.local` file (for local development).
+- Your selected provider and API keys are saved in browser localStorage for convenience.

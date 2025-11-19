@@ -182,23 +182,23 @@ export class AIProviderManager {
     try {
       switch (this.currentProvider) {
         case 'claude':
-          // Check if API key is set
-          const claudeKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-          if (!claudeKey) {
+          // Check if API key is set (localStorage or env)
+          const hasClaudeKey = claudeService.hasApiKey();
+          if (!hasClaudeKey) {
             return {
               available: false,
-              message: 'Claude API key not set. Add VITE_ANTHROPIC_API_KEY to .env.local'
+              message: 'Claude API key not set. Please configure it in Settings.'
             };
           }
           return { available: true, message: 'Claude is ready' };
 
         case 'gemini':
-          // Check if API key is set
-          const geminiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-          if (!geminiKey) {
+          // Check if API key is set (localStorage or env)
+          const hasGeminiKey = geminiService.hasApiKey();
+          if (!hasGeminiKey) {
             return {
               available: false,
-              message: 'Gemini API key not set. Add VITE_GOOGLE_API_KEY to .env.local (Get free key from Google AI Studio)'
+              message: 'Gemini API key not set. Please configure it in Settings or get a FREE key from Google AI Studio.'
             };
           }
           return { available: true, message: 'Gemini is ready (FREE tier available!)' };
@@ -209,7 +209,7 @@ export class AIProviderManager {
           if (!isAvailable) {
             return {
               available: false,
-              message: 'Ollama is not running. Start Ollama or change the VITE_OLLAMA_BASE_URL in .env.local'
+              message: 'Ollama is not running. Start Ollama or configure the base URL in Settings.'
             };
           }
           const models = await ollamaService.getAvailableModels();

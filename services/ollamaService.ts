@@ -1,17 +1,56 @@
 import { AnalysisResult, ChatService } from '../types';
 
+const BASE_URL_STORAGE_KEY = 'ollama_base_url';
+const MODEL_STORAGE_KEY = 'ollama_model';
+
 /**
- * Get the Ollama base URL from environment or use default
+ * Get the Ollama base URL from localStorage, environment, or use default
  */
 function getBaseUrl(): string {
+  const localUrl = localStorage.getItem(BASE_URL_STORAGE_KEY);
+  if (localUrl) {
+    return localUrl;
+  }
   return import.meta.env.VITE_OLLAMA_BASE_URL || 'http://localhost:11434';
 }
 
 /**
- * Get the default model name
+ * Get the default model name from localStorage, environment, or use default
  */
 function getDefaultModel(): string {
+  const localModel = localStorage.getItem(MODEL_STORAGE_KEY);
+  if (localModel) {
+    return localModel;
+  }
   return import.meta.env.VITE_OLLAMA_MODEL || 'llama3.1:8b';
+}
+
+/**
+ * Save Ollama configuration to localStorage
+ */
+export function saveConfig(baseUrl: string, model?: string): void {
+  localStorage.setItem(BASE_URL_STORAGE_KEY, baseUrl.trim());
+  if (model) {
+    localStorage.setItem(MODEL_STORAGE_KEY, model.trim());
+  }
+}
+
+/**
+ * Clear Ollama configuration from localStorage
+ */
+export function clearConfig(): void {
+  localStorage.removeItem(BASE_URL_STORAGE_KEY);
+  localStorage.removeItem(MODEL_STORAGE_KEY);
+}
+
+/**
+ * Get current Ollama configuration
+ */
+export function getConfig(): { baseUrl: string; model: string } {
+  return {
+    baseUrl: getBaseUrl(),
+    model: getDefaultModel()
+  };
 }
 
 /**
