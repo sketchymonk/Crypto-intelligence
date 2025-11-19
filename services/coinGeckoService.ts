@@ -2,26 +2,66 @@ import { CryptoMarketData, ChartDataPoint } from '../types';
 
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
 const CACHE_DURATION = 60 * 1000; // 1 minute cache
+const COINGECKO_API_KEY_STORAGE = 'coingecko_demo_api_key';
 
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
 }
 
-// Default headers for CoinGecko API requests
+// Get headers for CoinGecko API requests (with optional API key)
 const getHeaders = (): HeadersInit => {
-  return {
+  const headers: HeadersInit = {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   };
+
+  // Add Demo API key if available (required for free tier as of 2025)
+  const apiKey = localStorage.getItem(COINGECKO_API_KEY_STORAGE);
+  if (apiKey) {
+    headers['x-cg-demo-api-key'] = apiKey;
+  }
+
+  return headers;
 };
 
 /**
  * CoinGecko API Service for fetching real-time crypto market data
- * Uses free public API (no key required, but rate limited)
+ * Requires free Demo API key (sign up at https://www.coingecko.com/en/api/pricing)
  */
 class CoinGeckoService {
   private cache = new Map<string, CacheEntry<any>>();
+
+  /**
+   * Save CoinGecko Demo API key to localStorage
+   */
+  saveApiKey(apiKey: string): void {
+    localStorage.setItem(COINGECKO_API_KEY_STORAGE, apiKey);
+  }
+
+  /**
+   * Clear the stored API key
+   */
+  clearApiKey(): void {
+    localStorage.removeItem(COINGECKO_API_KEY_STORAGE);
+  }
+
+  /**
+   * Check if API key is configured
+   */
+  hasApiKey(): boolean {
+    return !!localStorage.getItem(COINGECKO_API_KEY_STORAGE);
+  }
+
+  /**
+   * Get masked API key for display
+   */
+  getMaskedApiKey(): string | null {
+    const apiKey = localStorage.getItem(COINGECKO_API_KEY_STORAGE);
+    if (!apiKey) return null;
+    if (apiKey.length <= 8) return '****';
+    return `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+  }
 
   /**
    * Search for a coin by name or symbol

@@ -20,6 +20,14 @@ const LiveDataPanel: React.FC<LiveDataPanelProps> = ({ coinId: initialCoinId, on
   const [chartDays, setChartDays] = useState<number | 'max'>(30);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [chartLoading, setChartLoading] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [showApiKeySetup, setShowApiKeySetup] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+
+  // Check if API key is set
+  useEffect(() => {
+    setHasApiKey(coinGeckoService.hasApiKey());
+  }, []);
 
   // Load data on mount and when coinId changes
   useEffect(() => {
@@ -79,6 +87,19 @@ const LiveDataPanel: React.FC<LiveDataPanelProps> = ({ coinId: initialCoinId, on
     onCoinChange?.(newCoinId);
   };
 
+  const handleSaveApiKey = () => {
+    if (!apiKeyInput.trim()) {
+      alert('Please enter a valid API key');
+      return;
+    }
+    coinGeckoService.saveApiKey(apiKeyInput.trim());
+    setApiKeyInput('');
+    setHasApiKey(true);
+    setShowApiKeySetup(false);
+    // Reload data with new API key
+    loadCoinData();
+  };
+
   const formatNumber = (num: number, decimals = 2) => {
     if (num >= 1e9) return `$${(num / 1e9).toFixed(decimals)}B`;
     if (num >= 1e6) return `$${(num / 1e6).toFixed(decimals)}M`;
@@ -123,6 +144,75 @@ const LiveDataPanel: React.FC<LiveDataPanelProps> = ({ coinId: initialCoinId, on
           </button>
         </div>
       </div>
+
+      {/* API Key Setup Banner */}
+      {!hasApiKey && (
+        <div className="bg-blue-900 border border-blue-700 text-blue-200 p-4 rounded-lg">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h4 className="font-semibold mb-2 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                CoinGecko API Key Required (FREE)
+              </h4>
+              <p className="text-sm mb-3">
+                CoinGecko now requires a free Demo API key. Get yours in 2 minutes!
+              </p>
+              {!showApiKeySetup ? (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowApiKeySetup(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition"
+                  >
+                    Setup API Key
+                  </button>
+                  <a
+                    href="https://www.coingecko.com/en/api/pricing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm transition inline-flex items-center"
+                  >
+                    Get Free API Key
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                      <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                    </svg>
+                  </a>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      value={apiKeyInput}
+                      onChange={(e) => setApiKeyInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSaveApiKey()}
+                      placeholder="Paste your CoinGecko Demo API key here..."
+                      className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={handleSaveApiKey}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setShowApiKeySetup(false)}
+                      className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="text-xs text-blue-300">
+                    💡 Sign up at CoinGecko, go to Developer Dashboard, and create a new API key
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search Interface */}
       {showSearch && (
