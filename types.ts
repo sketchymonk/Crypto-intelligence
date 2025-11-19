@@ -87,6 +87,7 @@ export interface SavedAnalysis {
     coinGeckoId?: string; // For tracking live data
     favorite?: boolean; // For bookmarking analyses
     consensusResults?: ConsensusAnalysisResult[]; // For multi-provider analysis
+    dataProvenance?: DataProvenance[]; // Data quality and source tracking
 }
 
 export interface ConsensusAnalysisResult {
@@ -140,4 +141,71 @@ export interface LiveDataState {
     data?: CryptoMarketData;
     chartData?: ChartDataPoint[];
     lastUpdated?: number;
+}
+
+// Data Quality & Provenance Types
+export interface DataSource {
+    name: string;
+    type: 'api' | 'blockchain' | 'social' | 'manual' | 'calculated';
+    url?: string;
+    timestamp: number;
+    confidence: number; // 0-100
+    isStale: boolean;
+    staleness?: number; // minutes old
+    status: 'active' | 'warning' | 'error' | 'blacklisted';
+    staleCount?: number; // number of times this source has been stale
+}
+
+export interface DataProvenance {
+    metric: string;
+    value: string | number;
+    sources: DataSource[];
+    consensus?: {
+        method: 'median' | 'mean' | 'mode';
+        deviation?: number;
+        outliers?: string[];
+    };
+    validationStatus: 'pass' | 'warning' | 'fail';
+    validationMessages?: string[];
+}
+
+export type ConsensusMethod = 'median' | 'mean' | 'mode';
+export type OutlierRule = 'mad' | 'iqr' | 'custom';
+
+export interface CustomValidationRule {
+    id: string;
+    name: string;
+    condition: string; // e.g., "volume < 500000"
+    action: 'disregard_price_deviation' | 'blacklist_source' | 'warning' | 'error';
+    enabled: boolean;
+}
+
+export interface DataGuardrailsConfig {
+    mode: 'strict' | 'web_scraping' | 'custom';
+
+    // Max age settings (in minutes)
+    maxPriceAge: number;
+    maxSupplyAge: number;
+    maxVolumeAge: number;
+    maxOnChainDataAge: number;
+    maxSocialDataAge: number;
+    maxDevActivityAge: number;
+
+    // Consensus settings
+    minConsensusSources: number;
+    consensusMethod: ConsensusMethod;
+
+    // Deviation thresholds (percentage)
+    maxPriceRelativeDeviation: number;
+    maxSupplyRelativeDeviation: number;
+    maxVolumeRelativeDeviation: number;
+
+    // Outlier detection
+    outlierRule: OutlierRule;
+
+    // Custom validation rules
+    customRules: CustomValidationRule[];
+
+    // Blacklist settings
+    autoBlacklistAfterStaleCount: number;
 }

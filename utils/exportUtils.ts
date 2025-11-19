@@ -1,4 +1,4 @@
-import { SavedAnalysis } from '../types';
+import { SavedAnalysis, DataProvenance } from '../types';
 import { marked } from 'marked';
 
 /**
@@ -12,6 +12,9 @@ import { marked } from 'marked';
 function parseMarkdown(markdown: string): string {
   // Remove duplicate "Analysis Date:" line at the start (already in metadata bar)
   let cleanedMarkdown = markdown.replace(/^Analysis Date:\s*[^\n]+\n+/i, '');
+
+  // Add special callout boxes for key sections
+  cleanedMarkdown = enhanceSpecialSections(cleanedMarkdown);
 
   // Convert key metrics sections to professional tables
   cleanedMarkdown = convertKeyMetricsToTable(cleanedMarkdown);
@@ -44,83 +47,337 @@ function parseMarkdown(markdown: string): string {
   html = html.replace(/\b(SELL|Sell)\b/g, '<span class="recommendation-sell">SELL</span>');
   html = html.replace(/\b(AVOID|Avoid)\b/g, '<span class="recommendation-avoid">AVOID</span>');
 
+  // Style percentage changes
+  html = html.replace(/([+-]?\d+\.?\d*%)/g, (match) => {
+    if (match.startsWith('+') || (!match.startsWith('-') && parseFloat(match) > 0)) {
+      return `<span class="percent-positive">${match}</span>`;
+    } else if (match.startsWith('-')) {
+      return `<span class="percent-negative">${match}</span>`;
+    }
+    return match;
+  });
+
+  // Style dollar amounts
+  html = html.replace(/\$[\d,]+\.?\d*/g, '<span class="dollar-amount">$&</span>');
+
   // Enhance strong emphasis
   html = html.replace(/<strong>(.*?)<\/strong>/g, '<strong class="highlight">$1</strong>');
+
+  // Add section breaks
+  html = html.replace(/<h2/g, '<div class="section-break"></div><h2');
 
   return html;
 }
 
 /**
- * Convert key metrics sections to professional HTML tables
+ * Enhance special sections with callout boxes
  */
-function convertKeyMetricsToTable(markdown: string): string {
-  // Pattern to match Key Metrics sections with bullet points
-  const keyMetricsPattern = /#{1,3}\s*(?:Key Metrics|Current Metrics|Market Metrics|Price Metrics|Token Metrics)[\s\S]*?\n((?:[-*]\s+\*\*[^*]+\*\*:[^\n]+\n?)+)/gi;
-
-  markdown = markdown.replace(keyMetricsPattern, (match, metricsContent) => {
-    // Extract individual metrics
-    const metricLines = metricsContent.match(/[-*]\s+\*\*([^*]+)\*\*:\s*([^\n]+)/g);
-
-    if (!metricLines || metricLines.length === 0) {
-      return match; // Return original if no metrics found
+function enhanceSpecialSections(markdown: string): string {
+  // Executive Summary
+  markdown = markdown.replace(
+    /#{1,3}\s*(Executive Summary|Summary|Overview)[\s\S]*?\n((?:[^\n#]|\n(?!#{1,3}\s))+)/gi,
+    (match, header, content) => {
+      return `### ${header}\n\n<div class="executive-summary-box">\n${content.trim()}\n</div>\n`;
     }
+  );
 
-    // Build table rows
-    let tableRows = '';
-    metricLines.forEach((line: string) => {
-      const metricMatch = line.match(/[-*]\s+\*\*([^*]+)\*\*:\s*([^\n]+)/);
-      if (metricMatch) {
-        const label = metricMatch[1].trim();
-        const value = metricMatch[2].trim();
-        tableRows += `| ${label} | ${value} |\n`;
-      }
-    });
-
-    // Get the header line
-    const headerMatch = match.match(/(#{1,3}\s*(?:Key Metrics|Current Metrics|Market Metrics|Price Metrics|Token Metrics)[^\n]*)/i);
-    const header = headerMatch ? headerMatch[1] : '### Key Metrics';
-
-    // Return formatted table
-    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
-  });
-
-  // Also handle "Dashboard" style metrics with colon format
-  const dashboardPattern = /#{1,3}\s*(?:Dashboard|Live Data|Market Data)[\s\S]*?\n((?:[-*]\s+[^:]+:[^\n]+\n?){3,})/gi;
-
-  markdown = markdown.replace(dashboardPattern, (match, metricsContent) => {
-    // Extract individual metrics
-    const metricLines = metricsContent.match(/[-*]\s+([^:]+):\s*([^\n]+)/g);
-
-    if (!metricLines || metricLines.length === 0) {
-      return match;
+  // Investment Recommendation
+  markdown = markdown.replace(
+    /#{1,3}\s*(?:Investment )?Recommendation[\s\S]*?\n((?:[^\n#]|\n(?!#{1,3}\s))+)/gi,
+    (match, content) => {
+      return `### Investment Recommendation\n\n<div class="recommendation-box">\n${content.trim()}\n</div>\n`;
     }
+  );
 
-    // Build table rows
-    let tableRows = '';
-    metricLines.forEach((line: string) => {
-      const metricMatch = line.match(/[-*]\s+([^:]+):\s*([^\n]+)/);
-      if (metricMatch) {
-        const label = metricMatch[1].trim().replace(/\*\*/g, ''); // Remove any bold markers
-        const value = metricMatch[2].trim();
-        tableRows += `| ${label} | ${value} |\n`;
-      }
-    });
+  // Key Takeaways / TL;DR
+  markdown = markdown.replace(
+    /#{1,3}\s*(?:Key Takeaways|TL;?DR|Quick Summary)[\s\S]*?\n((?:[^\n#]|\n(?!#{1,3}\s))+)/gi,
+    (match, header, content) => {
+      return `### ${header}\n\n<div class="takeaway-box">\n${content.trim()}\n</div>\n`;
+    }
+  );
 
-    // Get the header line
-    const headerMatch = match.match(/(#{1,3}\s*(?:Dashboard|Live Data|Market Data)[^\n]*)/i);
-    const header = headerMatch ? headerMatch[1] : '### Market Data';
-
-    // Return formatted table
-    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
-  });
+  // Warnings / Red Flags
+  markdown = markdown.replace(
+    /#{1,3}\s*(?:⚠️\s*)?(?:Warnings?|Red Flags?|Caution)[\s\S]*?\n((?:[^\n#]|\n(?!#{1,3}\s))+)/gi,
+    (match, content) => {
+      return `### ⚠️ Warnings\n\n<div class="warning-box">\n${content.trim()}\n</div>\n`;
+    }
+  );
 
   return markdown;
 }
 
 /**
+ * Convert sections with data to professional HTML tables
+ */
+function convertKeyMetricsToTable(markdown: string): string {
+  // Extended pattern for all data-heavy sections that should be tables
+  const tableSections = [
+    'Key Metrics', 'Current Metrics', 'Market Metrics', 'Price Metrics', 'Token Metrics',
+    'Dashboard', 'Live Data', 'Market Data', 'Trading Metrics',
+    'Tokenomics', 'Token Distribution', 'Supply Metrics',
+    'Technical Indicators', 'Technical Analysis', 'On-Chain Metrics',
+    'Fundamental Metrics', 'Financial Metrics', 'Performance Metrics',
+    'Risk Metrics', 'Risk Assessment', 'Risk Breakdown', 'Risk Categories',
+    'Competitive Analysis', 'Competitor Comparison', 'Market Position',
+    'Team Metrics', 'Development Metrics', 'GitHub Metrics',
+    'Social Metrics', 'Community Metrics', 'Engagement Metrics',
+    'Valuation Metrics', 'Price Analysis', 'Historical Performance'
+  ];
+
+  const sectionsRegex = tableSections.join('|');
+
+  // Pattern 1: Sections with bold key-value pairs
+  const keyValuePattern = new RegExp(`#{1,3}\\s*(?:${sectionsRegex})[\\s\\S]*?\\n((?:[-*]\\s+\\*\\*[^*]+\\*\\*:[^\\n]+\\n?)+)`, 'gi');
+
+  markdown = markdown.replace(keyValuePattern, (match, content) => {
+    const lines = content.match(/[-*]\s+\*\*([^*]+)\*\*:\s*([^\n]+)/g);
+    if (!lines || lines.length === 0) return match;
+
+    let tableRows = '';
+    lines.forEach((line: string) => {
+      const lineMatch = line.match(/[-*]\s+\*\*([^*]+)\*\*:\s*([^\n]+)/);
+      if (lineMatch) {
+        tableRows += `| ${lineMatch[1].trim()} | ${lineMatch[2].trim()} |\n`;
+      }
+    });
+
+    const headerMatch = match.match(/(#{1,3}\s*[^\n]+)/i);
+    const header = headerMatch ? headerMatch[1] : '### Metrics';
+
+    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
+  });
+
+  // Pattern 2: Simple colon-separated key-value lists (3+ items)
+  const colonPattern = new RegExp(`#{1,3}\\s*(?:${sectionsRegex})[\\s\\S]*?\\n((?:[-*]\\s+[^:]+:[^\\n]+\\n?){3,})`, 'gi');
+
+  markdown = markdown.replace(colonPattern, (match, content) => {
+    const lines = content.match(/[-*]\s+([^:]+):\s*([^\n]+)/g);
+    if (!lines || lines.length === 0) return match;
+
+    let tableRows = '';
+    lines.forEach((line: string) => {
+      const lineMatch = line.match(/[-*]\s+([^:]+):\s*([^\n]+)/);
+      if (lineMatch) {
+        const label = lineMatch[1].trim().replace(/\*\*/g, '');
+        tableRows += `| ${label} | ${lineMatch[2].trim()} |\n`;
+      }
+    });
+
+    const headerMatch = match.match(/(#{1,3}\s*[^\n]+)/i);
+    const header = headerMatch ? headerMatch[1] : '### Data';
+
+    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
+  });
+
+  // Pattern 3: Pros and Cons sections
+  markdown = convertProsConsToTable(markdown);
+
+  // Pattern 4: Risk assessment with ratings
+  markdown = convertRiskAssessmentToTable(markdown);
+
+  // Pattern 5: Comparison lists (vs, compared to, etc.)
+  markdown = convertComparisonToTable(markdown);
+
+  return markdown;
+}
+
+/**
+ * Convert Pros and Cons sections to side-by-side table
+ */
+function convertProsConsToTable(markdown: string): string {
+  const prosConsPattern = /#{1,3}\s*(Pros|Strengths|Advantages)[\s\S]*?\n((?:[-*]\s+[^\n]+\n?)+)[\s\S]*?#{1,3}\s*(Cons|Weaknesses|Disadvantages|Risks)[\s\S]*?\n((?:[-*]\s+[^\n]+\n?)+)/gi;
+
+  return markdown.replace(prosConsPattern, (match, prosHeader, prosContent, consHeader, consContent) => {
+    const pros = prosContent.match(/[-*]\s+([^\n]+)/g)?.map((p: string) => p.replace(/^[-*]\s+/, '').trim()) || [];
+    const cons = consContent.match(/[-*]\s+([^\n]+)/g)?.map((c: string) => c.replace(/^[-*]\s+/, '').trim()) || [];
+
+    const maxRows = Math.max(pros.length, cons.length);
+    let tableRows = '';
+
+    for (let i = 0; i < maxRows; i++) {
+      const pro = pros[i] || '';
+      const con = cons[i] || '';
+      tableRows += `| ${pro} | ${con} |\n`;
+    }
+
+    return `### ${prosHeader} & ${consHeader}\n\n| ✅ ${prosHeader} | ❌ ${consHeader} |\n|--------|--------|\n${tableRows}\n`;
+  });
+}
+
+/**
+ * Convert Risk Assessment sections to table
+ */
+function convertRiskAssessmentToTable(markdown: string): string {
+  const riskPattern = /#{1,3}\s*Risk Assessment[\s\S]*?\n((?:[-*]\s+\*\*[^:]+\*\*:?\s*[🟢🟡🔴⚠️]?\s*(?:LOW|MEDIUM|HIGH|CRITICAL)[^\n]*\n?)+)/gi;
+
+  return markdown.replace(riskPattern, (match, content) => {
+    const lines = content.match(/[-*]\s+\*\*([^:]+)\*\*:?\s*([🟢🟡🔴⚠️]?\s*(?:LOW|MEDIUM|HIGH|CRITICAL)[^\n]*)/gi);
+    if (!lines || lines.length === 0) return match;
+
+    let tableRows = '';
+    lines.forEach((line: string) => {
+      const lineMatch = line.match(/[-*]\s+\*\*([^:]+)\*\*:?\s*([🟢🟡🔴⚠️]?\s*(?:LOW|MEDIUM|HIGH|CRITICAL)[^\n]*)/i);
+      if (lineMatch) {
+        const category = lineMatch[1].trim();
+        const rating = lineMatch[2].trim();
+        tableRows += `| ${category} | ${rating} |\n`;
+      }
+    });
+
+    return `### Risk Assessment\n\n| Risk Category | Rating |\n|--------------|--------|\n${tableRows}\n`;
+  });
+}
+
+/**
+ * Convert comparison lists to table
+ */
+function convertComparisonToTable(markdown: string): string {
+  const comparisonPattern = /#{1,3}\s*(?:Competitive Analysis|Competitor Comparison|vs\.|Comparison)[\s\S]*?\n((?:[-*]\s+\*\*[^:]+\*\*:[^\n]+\n?){2,})/gi;
+
+  return markdown.replace(comparisonPattern, (match, content) => {
+    const lines = content.match(/[-*]\s+\*\*([^:]+)\*\*:\s*([^\n]+)/g);
+    if (!lines || lines.length === 0) return match;
+
+    let tableRows = '';
+    lines.forEach((line: string) => {
+      const lineMatch = line.match(/[-*]\s+\*\*([^:]+)\*\*:\s*([^\n]+)/);
+      if (lineMatch) {
+        tableRows += `| ${lineMatch[1].trim()} | ${lineMatch[2].trim()} |\n`;
+      }
+    });
+
+    const headerMatch = match.match(/(#{1,3}\s*[^\n]+)/i);
+    const header = headerMatch ? headerMatch[1] : '### Comparison';
+
+    return `${header}\n\n| Metric | Value |\n|--------|-------|\n${tableRows}\n`;
+  });
+}
+
+/**
+ * Generate data provenance table HTML
+ */
+function generateProvenanceTableHTML(provenance: DataProvenance[]): string {
+  if (!provenance || provenance.length === 0) {
+    return '';
+  }
+
+  let tableHTML = `
+    <div class="provenance-section">
+      <h2>📊 Data Provenance & Quality Report</h2>
+      <p class="provenance-description">
+        This table provides complete transparency on all data sources, their freshness,
+        confidence levels, and validation status for every metric used in this analysis.
+      </p>
+      <table class="data-table provenance-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Value</th>
+            <th>Data Sources</th>
+            <th>Timestamp</th>
+            <th>Confidence</th>
+            <th>Staleness</th>
+            <th>Status</th>
+            <th>Validation</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  provenance.forEach(item => {
+    const statusClass =
+      item.validationStatus === 'pass' ? 'status-pass' :
+      item.validationStatus === 'warning' ? 'status-warning' :
+      'status-fail';
+
+    const statusIcon =
+      item.validationStatus === 'pass' ? '✓' :
+      item.validationStatus === 'warning' ? '⚠' :
+      '✗';
+
+    item.sources.forEach((source, index) => {
+      const sourceStatusClass =
+        source.status === 'active' ? 'source-active' :
+        source.status === 'warning' ? 'source-warning' :
+        source.status === 'error' ? 'source-error' :
+        'source-blacklisted';
+
+      const timestamp = new Date(source.timestamp).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      tableHTML += `
+        <tr>
+          ${index === 0 ? `<td rowspan="${item.sources.length}">${item.metric}</td>` : ''}
+          ${index === 0 ? `<td rowspan="${item.sources.length}"><strong>${item.value}</strong></td>` : ''}
+          <td>
+            <div class="source-info">
+              <span class="source-name">${source.name}</span>
+              ${source.url ? `<a href="${source.url}" target="_blank" class="source-link">🔗</a>` : ''}
+            </div>
+          </td>
+          <td>${timestamp}</td>
+          <td>
+            <div class="confidence-bar">
+              <div class="confidence-fill" style="width: ${source.confidence}%"></div>
+              <span class="confidence-text">${source.confidence}%</span>
+            </div>
+          </td>
+          <td>
+            <span class="${source.isStale ? 'staleness-warning' : 'staleness-fresh'}">
+              ${source.staleness !== undefined ? `${source.staleness} min` : 'N/A'}
+            </span>
+          </td>
+          <td>
+            <span class="source-status ${sourceStatusClass}">
+              ${source.status}
+            </span>
+          </td>
+          ${index === 0 ? `
+            <td rowspan="${item.sources.length}">
+              <div class="validation-status ${statusClass}">
+                <span class="validation-icon">${statusIcon}</span>
+                <span class="validation-text">${item.validationStatus}</span>
+                ${item.validationMessages && item.validationMessages.length > 0 ? `
+                  <div class="validation-messages">
+                    ${item.validationMessages.map(msg => `<div class="validation-msg">• ${msg}</div>`).join('')}
+                  </div>
+                ` : ''}
+                ${item.consensus ? `
+                  <div class="consensus-info">
+                    <small>Consensus: ${item.consensus.method} | Deviation: ${item.consensus.deviation?.toFixed(2)}%</small>
+                    ${item.consensus.outliers && item.consensus.outliers.length > 0 ? `
+                      <small>Outliers: ${item.consensus.outliers.join(', ')}</small>
+                    ` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            </td>
+          ` : ''}
+        </tr>
+      `;
+    });
+  });
+
+  tableHTML += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  return tableHTML;
+}
+
+/**
  * Generate professional HTML report
  */
-export function generateAnalysisHTML(analysis: SavedAnalysis): string {
+export function generateAnalysisHTML(analysis: SavedAnalysis, includeProvenance: boolean = false): string {
   const date = new Date(analysis.timestamp);
   const formattedDate = date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -359,15 +616,77 @@ export function generateAnalysisHTML(analysis: SavedAnalysis): string {
         .content-section p {
             margin-bottom: 16px;
             text-align: justify;
+            line-height: 1.8;
         }
 
-        .content-section ul, .content-section ol {
-            margin-left: 20px;
-            margin-bottom: 16px;
+        /* Enhanced bullet points */
+        .content-section ul {
+            margin-left: 0;
+            margin-bottom: 20px;
+            padding-left: 0;
+            list-style: none;
         }
 
-        .content-section li {
+        .content-section ul li {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 12px;
+            line-height: 1.7;
+        }
+
+        .content-section ul li::before {
+            content: '▸';
+            position: absolute;
+            left: 8px;
+            color: var(--accent-teal);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        /* Nested lists */
+        .content-section ul ul {
+            margin-top: 8px;
             margin-bottom: 8px;
+        }
+
+        .content-section ul ul li::before {
+            content: '◦';
+            color: var(--primary-blue);
+        }
+
+        /* Enhanced numbered lists */
+        .content-section ol {
+            margin-left: 0;
+            margin-bottom: 20px;
+            padding-left: 0;
+            list-style: none;
+            counter-reset: item;
+        }
+
+        .content-section ol li {
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 14px;
+            line-height: 1.7;
+            counter-increment: item;
+        }
+
+        .content-section ol li::before {
+            content: counter(item);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: linear-gradient(135deg, var(--primary-navy), var(--primary-blue));
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .content-section strong.highlight {
@@ -379,10 +698,147 @@ export function generateAnalysisHTML(analysis: SavedAnalysis): string {
             color: var(--accent-teal);
             text-decoration: none;
             border-bottom: 1px solid var(--accent-teal);
+            transition: all 0.2s;
         }
 
         .content-section a:hover {
             border-bottom: 2px solid var(--accent-teal);
+            color: var(--primary-blue);
+        }
+
+        /* Professional highlight boxes */
+        .content-section blockquote {
+            margin: 24px 0;
+        }
+
+        /* Executive Summary special styling */
+        .content-section > h2:first-of-type + p,
+        .content-section > h1:first-of-type + p {
+            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+            border-left: 4px solid var(--primary-blue);
+            padding: 20px 24px;
+            margin: 24px 0;
+            border-radius: 4px;
+            font-size: 11pt;
+            line-height: 1.8;
+        }
+
+        /* Key takeaways boxes */
+        .content-section p strong:first-child {
+            color: var(--primary-navy);
+        }
+
+        /* Section dividers */
+        .content-section hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+            margin: 40px 0;
+        }
+
+        .section-break {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-gray), transparent);
+            margin: 30px 0;
+        }
+
+        /* ========================================
+           SPECIAL CALLOUT BOXES
+           ======================================== */
+
+        .executive-summary-box {
+            background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+            border-left: 5px solid var(--accent-teal);
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin: 24px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            position: relative;
+        }
+
+        .executive-summary-box::before {
+            content: '📊';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 32px;
+            opacity: 0.3;
+        }
+
+        .recommendation-box {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+            border: 2px solid var(--accent-gold);
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin: 24px 0;
+            box-shadow: 0 4px 12px rgba(212,175,55,0.15);
+            position: relative;
+        }
+
+        .recommendation-box::before {
+            content: '💡';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 32px;
+            opacity: 0.4;
+        }
+
+        .takeaway-box {
+            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+            border: 2px solid var(--primary-blue);
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin: 24px 0;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.1);
+        }
+
+        .takeaway-box::before {
+            content: '✨';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 28px;
+            opacity: 0.3;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
+            border-left: 5px solid #EF4444;
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin: 24px 0;
+            box-shadow: 0 2px 8px rgba(239,68,68,0.1);
+            position: relative;
+        }
+
+        .warning-box::before {
+            content: '⚠️';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 32px;
+            opacity: 0.4;
+        }
+
+        /* ========================================
+           INLINE STYLING ENHANCEMENTS
+           ======================================== */
+
+        .percent-positive {
+            color: #059669;
+            font-weight: 600;
+        }
+
+        .percent-negative {
+            color: #DC2626;
+            font-weight: 600;
+        }
+
+        .dollar-amount {
+            font-weight: 600;
+            color: var(--primary-navy);
+            font-variant-numeric: tabular-nums;
         }
 
         /* ========================================
@@ -643,6 +1099,192 @@ export function generateAnalysisHTML(analysis: SavedAnalysis): string {
         }
 
         /* ========================================
+           DATA PROVENANCE TABLE
+           ======================================== */
+
+        .provenance-section {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 3px solid var(--accent-gold);
+        }
+
+        .provenance-section h2 {
+            color: var(--primary-navy);
+            margin-bottom: 12px;
+        }
+
+        .provenance-description {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            font-size: 11pt;
+        }
+
+        .provenance-table {
+            font-size: 9.5pt;
+        }
+
+        .provenance-table th {
+            font-size: 10px;
+        }
+
+        .source-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .source-name {
+            font-weight: 500;
+        }
+
+        .source-link {
+            font-size: 12px;
+            text-decoration: none;
+        }
+
+        .confidence-bar {
+            position: relative;
+            width: 100%;
+            height: 20px;
+            background: var(--bg-gray-100);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #10B981 0%, #059669 100%);
+            transition: width 0.3s;
+        }
+
+        .confidence-text {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .staleness-fresh {
+            color: #10B981;
+            font-weight: 600;
+        }
+
+        .staleness-warning {
+            color: #F59E0B;
+            font-weight: 600;
+        }
+
+        .source-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .source-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: #059669;
+        }
+
+        .source-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #D97706;
+        }
+
+        .source-error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #DC2626;
+        }
+
+        .source-blacklisted {
+            background: rgba(153, 27, 27, 0.15);
+            color: #991B1B;
+        }
+
+        .validation-status {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .validation-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: 700;
+            margin-right: 6px;
+        }
+
+        .status-pass .validation-icon {
+            background: #10B981;
+            color: white;
+        }
+
+        .status-warning .validation-icon {
+            background: #F59E0B;
+            color: white;
+        }
+
+        .status-fail .validation-icon {
+            background: #EF4444;
+            color: white;
+        }
+
+        .validation-text {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pass .validation-text {
+            color: #10B981;
+        }
+
+        .status-warning .validation-text {
+            color: #F59E0B;
+        }
+
+        .status-fail .validation-text {
+            color: #EF4444;
+        }
+
+        .validation-messages {
+            margin-top: 8px;
+            font-size: 9px;
+            color: var(--text-secondary);
+        }
+
+        .validation-msg {
+            padding: 2px 0;
+        }
+
+        .consensus-info {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-gray);
+        }
+
+        .consensus-info small {
+            display: block;
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        /* ========================================
            PRINT STYLES
            ======================================== */
 
@@ -759,6 +1401,8 @@ export function generateAnalysisHTML(analysis: SavedAnalysis): string {
             <div class="content-section">
                 ${contentHtml}
             </div>
+
+            ${includeProvenance && analysis.dataProvenance ? generateProvenanceTableHTML(analysis.dataProvenance) : ''}
         </div>
 
         <!-- FOOTER -->
@@ -790,8 +1434,8 @@ export function generateAnalysisHTML(analysis: SavedAnalysis): string {
 /**
  * Download analysis as professional HTML file
  */
-export function downloadAsHTML(analysis: SavedAnalysis): void {
-  const html = generateAnalysisHTML(analysis);
+export function downloadAsHTML(analysis: SavedAnalysis, includeProvenance: boolean = false): void {
+  const html = generateAnalysisHTML(analysis, includeProvenance);
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -807,8 +1451,8 @@ export function downloadAsHTML(analysis: SavedAnalysis): void {
 /**
  * Export as PDF (opens print dialog)
  */
-export function exportAsPDF(analysis: SavedAnalysis): void {
-  const html = generateAnalysisHTML(analysis);
+export function exportAsPDF(analysis: SavedAnalysis, includeProvenance: boolean = false): void {
+  const html = generateAnalysisHTML(analysis, includeProvenance);
   const printWindow = window.open('', '_blank');
 
   if (printWindow) {
