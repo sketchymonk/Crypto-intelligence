@@ -19,6 +19,7 @@ const LiveDataPanel: React.FC<LiveDataPanelProps> = ({ coinId: initialCoinId, on
   const [showSearch, setShowSearch] = useState(false);
   const [chartDays, setChartDays] = useState(30);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [chartLoading, setChartLoading] = useState(false);
 
   // Load data on mount and when coinId changes
   useEffect(() => {
@@ -283,22 +284,37 @@ const LiveDataPanel: React.FC<LiveDataPanelProps> = ({ coinId: initialCoinId, on
                 {[7, 30, 90, 365].map(days => (
                   <button
                     key={days}
-                    onClick={() => {
+                    onClick={async () => {
                       setChartDays(days);
-                      coinGeckoService.getChartData(coinId, days).then(setChartData);
+                      setChartLoading(true);
+                      try {
+                        const data = await coinGeckoService.getChartData(coinId, days);
+                        setChartData(data);
+                      } catch (err) {
+                        console.error('Failed to load chart data:', err);
+                      } finally {
+                        setChartLoading(false);
+                      }
                     }}
+                    disabled={chartLoading}
                     className={`text-xs px-2 py-1 rounded transition ${
                       chartDays === days
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                    }`}
+                    } ${chartLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {days}d
                   </button>
                 ))}
               </div>
             </div>
-            <PriceChart data={chartData} />
+            {chartLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+              </div>
+            ) : (
+              <PriceChart data={chartData} />
+            )}
           </div>
 
           {/* Data Source Attribution */}
