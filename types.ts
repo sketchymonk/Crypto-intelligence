@@ -69,3 +69,67 @@ export interface ModelInfo {
     cost: 'free' | 'low' | 'medium' | 'high';
     speed: 'slow' | 'medium' | 'fast';
 }
+
+// Analysis History Types
+export interface SavedAnalysis {
+    id: string;
+    timestamp: number;
+    projectName: string;
+    projectSymbol?: string;
+    formData: FormData;
+    prompt: string;
+    response: string;
+    analysisType: 'deep' | 'fast' | 'balanced';
+    provider: AIProvider;
+    groundingChunks?: GroundingChunk[];
+    tags?: string[];
+    notes?: string;
+    coinGeckoId?: string; // For tracking live data
+}
+
+export interface AnalysisComparison {
+    older: SavedAnalysis;
+    newer: SavedAnalysis;
+    changes: {
+        timeElapsed: number;
+        priceChange?: number;
+        volumeChange?: number;
+        tvlChange?: number;
+    };
+}
+
+// Live Data Types
+export interface CryptoMarketData {
+    id: string;
+    symbol: string;
+    name: string;
+    current_price: number;
+    market_cap: number;
+    market_cap_rank: number;
+    total_volume: number;
+    price_change_percentage_24h: number;
+    price_change_percentage_7d: number;
+    price_change_percentage_30d: number;
+    circulating_supply: number;
+    total_supply: number;
+    max_supply: number;
+    ath: number;
+    ath_date: string;
+    atl: number;
+    atl_date: string;
+    last_updated: string;
+}
+
+export interface ChartDataPoint {
+    timestamp: number;
+    price: number;
+    volume?: number;
+}
+
+export interface LiveDataState {
+    loading: boolean;
+    error?: string;
+    data?: CryptoMarketData;
+    chartData?: ChartDataPoint[];
+    lastUpdated?: number;
+}
