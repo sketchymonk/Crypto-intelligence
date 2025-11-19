@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { sections } from './constants';
 import { FormData, GroundingChunk, AIProvider } from './types';
 import Accordion from './components/Accordion';
@@ -7,6 +7,7 @@ import { getProviderManager } from './services/aiProvider';
 import OutputDisplay from './components/OutputDisplay';
 import ChatBot from './components/ChatBot';
 import ProviderSelector from './components/ProviderSelector';
+import Settings from './components/Settings';
 
 const App: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({});
@@ -16,8 +17,29 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeAnalysis, setActiveAnalysis] = useState<'deep' | 'fast' | 'balanced' | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [error, setError] = useState('');
   const [currentProvider, setCurrentProvider] = useState<AIProvider>('claude');
+  const [providerAvailable, setProviderAvailable] = useState(true);
+  const [providerMessage, setProviderMessage] = useState('');
+
+  // Check provider availability when it changes
+  useEffect(() => {
+    checkProviderAvailability();
+  }, [currentProvider]);
+
+  const checkProviderAvailability = async () => {
+    const providerManager = getProviderManager();
+    providerManager.setProvider(currentProvider);
+    const result = await providerManager.checkProviderAvailability();
+    setProviderAvailable(result.available);
+    setProviderMessage(result.message);
+  };
+
+  const handleSettingsChange = () => {
+    // Recheck provider availability when settings change
+    checkProviderAvailability();
+  };
 
   const handleInputChange = useCallback((section: string, field: string, value: string | boolean | string[]) => {
     setFormData(prev => ({
@@ -136,13 +158,46 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-600">
-            Insane Crypto Prompt Generator
-          </h1>
-          <p className="mt-2 text-lg text-gray-400">
-            Craft expert-level research prompts and get instant AI-powered analysis.
-          </p>
+        <header className="mb-8">
+          <div className="flex justify-between items-start">
+            <div className="flex-1 text-center">
+              <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-600">
+                Crypto Intelligence
+              </h1>
+              <p className="mt-2 text-lg text-gray-400">
+                Craft expert-level research prompts and get instant AI-powered analysis.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="ml-4 bg-gray-800 hover:bg-gray-700 text-gray-300 p-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+              aria-label="Open Settings"
+              title="Settings"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          </div>
+          {!providerAvailable && (
+            <div className="mt-4 bg-yellow-900 border border-yellow-700 text-yellow-200 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <span className="font-medium">{providerMessage}</span>
+                </div>
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="bg-yellow-700 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Configure
+                </button>
+              </div>
+            </div>
+          )}
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -229,6 +284,12 @@ const App: React.FC = () => {
             <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.08-3.239A8.962 8.962 0 012 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM4.416 11.455A6.962 6.962 0 004 10c0-2.651 2.418-4.815 5.333-4.815 2.916 0 5.333 2.164 5.333 4.815 0 1.41-.65 2.68-1.683 3.555L14.667 15l-1.933-1.45A6.963 6.963 0 0110 14.182c-1.331 0-2.553-.37-3.584-.973l-1 .598z" clipRule="evenodd" />
           </svg>
         </button>
+      )}
+      {isSettingsOpen && (
+        <Settings
+          onClose={() => setIsSettingsOpen(false)}
+          onSettingsChange={handleSettingsChange}
+        />
       )}
     </div>
   );

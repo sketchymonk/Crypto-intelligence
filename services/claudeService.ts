@@ -1,13 +1,57 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AnalysisResult, ChatMessage } from '../types';
 
+const API_KEY_STORAGE_KEY = 'anthropic_api_key';
+
 function getApiKey(): string {
-  // In Vite, environment variables are accessed via import.meta.env
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error("VITE_ANTHROPIC_API_KEY environment variable not set. Please add it to your .env.local file.");
+  // Check localStorage first (for user-provided keys), then fall back to environment variable
+  const localKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+  if (localKey) {
+    return localKey;
   }
-  return apiKey;
+
+  const envKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  if (!envKey) {
+    throw new Error("Claude API key not found. Please set your API key in Settings or add VITE_ANTHROPIC_API_KEY to .env.local");
+  }
+  return envKey;
+}
+
+/**
+ * Save Claude API key to localStorage
+ */
+export function saveApiKey(apiKey: string): void {
+  localStorage.setItem(API_KEY_STORAGE_KEY, apiKey.trim());
+}
+
+/**
+ * Remove Claude API key from localStorage
+ */
+export function clearApiKey(): void {
+  localStorage.removeItem(API_KEY_STORAGE_KEY);
+}
+
+/**
+ * Check if Claude API key is set
+ */
+export function hasApiKey(): boolean {
+  return !!(localStorage.getItem(API_KEY_STORAGE_KEY) || import.meta.env.VITE_ANTHROPIC_API_KEY);
+}
+
+/**
+ * Get masked API key for display
+ */
+export function getMaskedApiKey(): string | null {
+  const apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+  if (!apiKey) {
+    // Check if env key exists
+    if (import.meta.env.VITE_ANTHROPIC_API_KEY) {
+      return 'Environment variable';
+    }
+    return null;
+  }
+  if (apiKey.length < 12) return '***';
+  return `${apiKey.slice(0, 8)}...${apiKey.slice(-4)}`;
 }
 
 /**
