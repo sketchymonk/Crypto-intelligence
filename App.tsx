@@ -10,6 +10,7 @@ import ProviderSelector from './components/ProviderSelector';
 import Settings from './components/Settings';
 import { TEMPLATES, getTemplateById } from './templates';
 import { generateGuardrailInstructions } from './guardrails';
+import { generateFeatureSuggestions, formatFeatureSuggestionsMarkdown } from './featureSuggestions';
 
 const App: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({});
@@ -103,6 +104,11 @@ const App: React.FC = () => {
       const guardrailInstructions = generateGuardrailInstructions(currentProvider, true);
       promptText += guardrailInstructions;
     }
+
+    // Always append feature suggestions for continuous improvement feedback loop
+    const suggestions = generateFeatureSuggestions(selectedTemplate, currentProvider, true);
+    const suggestionsMarkdown = formatFeatureSuggestionsMarkdown(suggestions);
+    promptText += suggestionsMarkdown;
 
     setGeneratedPrompt(promptText);
     setGeminiResponse('');
