@@ -55,7 +55,7 @@ export function getMaskedApiKey(): string | null {
 }
 
 /**
- * Runs a deep analysis using gemini-3.0-pro with maximum thinking budget.
+ * Runs a deep analysis using gemini-2.0-flash-thinking-exp with maximum thinking budget.
  * @param prompt The detailed prompt for the analysis.
  * @returns A promise that resolves to an AnalysisResult.
  */
@@ -63,7 +63,7 @@ export async function runDeepAnalysis(prompt: string): Promise<AnalysisResult> {
   const ai = new GoogleGenAI({ apiKey: getApiKey() });
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.0-pro',
+      model: 'gemini-2.0-flash-thinking-exp-01-21',
       contents: prompt,
       config: {
         thinkingConfig: { thinkingBudget: 32768 },
