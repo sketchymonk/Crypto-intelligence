@@ -79,12 +79,20 @@ export interface SavedAnalysis {
     formData: FormData;
     prompt: string;
     response: string;
-    analysisType: 'deep' | 'fast' | 'balanced';
+    analysisType: 'deep' | 'fast' | 'balanced' | 'risk' | 'consensus';
     provider: AIProvider;
     groundingChunks?: GroundingChunk[];
     tags?: string[];
     notes?: string;
     coinGeckoId?: string; // For tracking live data
+    favorite?: boolean; // For bookmarking analyses
+    consensusResults?: ConsensusAnalysisResult[]; // For multi-provider analysis
+}
+
+export interface ConsensusAnalysisResult {
+    provider: AIProvider;
+    response: string;
+    timestamp: number;
 }
 
 export interface AnalysisComparison {

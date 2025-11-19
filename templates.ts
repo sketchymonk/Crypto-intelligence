@@ -8,7 +8,7 @@ export interface Template {
   id: string;
   name: string;
   description: string;
-  category: 'defi' | 'l1' | 'token' | 'security' | 'trading';
+  category: 'defi' | 'l1' | 'token' | 'security' | 'trading' | 'risk';
   formData: FormData;
 }
 
@@ -602,6 +602,135 @@ export const TEMPLATES: Template[] = [
         modules: ['technical', 'onChain', 'marketStructure', 'social']
       }
     }
+  },
+  {
+    id: 'smart-investment-brief',
+    name: '⚡ Smart Investment Brief',
+    description: 'Concise all-in-one report with everything needed for smart investment decisions (15-20 min read)',
+    category: 'token',
+    formData: {
+      context: {
+        experts: ['Lead Tokenomics Analyst', 'On-Chain/Data Engineer', 'Security Auditor', 'Macro Strategist'],
+        purpose: 'Inform trading/investment decision',
+        actionability: 'Practical trading plan',
+        priorKnowledge: 'Basic understanding of crypto and this project type',
+        gaps: 'Complete snapshot of fundamentals, risks, technicals, and market positioning for immediate decision-making'
+      },
+      coreQuestion: {
+        primaryQuestion: 'Should I invest in this project now? What are the key opportunities and risks?',
+        hypothesis: 'This project has favorable risk-reward with clear catalysts and manageable risks',
+        counterfactuals: 'Bull case: Strong fundamentals + positive catalysts. Bear case: Hidden risks or poor timing'
+      },
+      specifications: {
+        timePeriod: 'Last 30-90 days + next 3-6 months outlook',
+        geographicLocation: 'Global',
+        sectorFocus: ['L1', 'L2', 'DeFi', 'Infrastructure'],
+        demographicFocus: ['Retail', 'Institutional'],
+        methodology: ['Fundamental Analysis', 'On-chain Quant Analysis', 'Technical/Chart Analysis', 'Sentiment Analysis', 'Event-Driven Analysis'],
+        ethics: 'Flag any red flags, rug pull indicators, or major concerns prominently'
+      },
+      output: {
+        executiveSummary: 'Yes',
+        depth: 'Level 2',
+        contentElements: ['trends', 'dataCharts', 'players', 'predictions', 'implications', 'alphaSignals'],
+        visualizations: ['Price/Volume charts', 'Unlock timelines', 'Key metrics dashboard'],
+        targetLength: '2,000-3,000 words',
+        citationStyle: 'Inline links'
+      },
+      format: {
+        writingFormat: 'Investment Memo',
+        writingPerspective: 'Third-person'
+      },
+      cryptoModules: {
+        modules: ['tokenomics', 'onChain', 'marketStructure', 'security', 'technical', 'social']
+      }
+    }
+  },
+  {
+    id: 'news-catalysts-sentiment',
+    name: '📰 News, Catalysts & Sentiment Report',
+    description: 'Latest news, upcoming events, community sentiment, and market buzz (focus on fresh, time-sensitive info)',
+    category: 'trading',
+    formData: {
+      context: {
+        experts: ['Macro Strategist', 'On-Chain/Data Engineer'],
+        purpose: 'Inform trading/investment decision',
+        actionability: 'Practical trading plan',
+        priorKnowledge: 'Awareness of project basics',
+        gaps: 'Latest news (last 7-30 days), upcoming events/catalysts, social sentiment, market narrative shifts'
+      },
+      coreQuestion: {
+        primaryQuestion: 'What are the latest developments, upcoming catalysts, and current market sentiment for this project?',
+        hypothesis: 'Recent news and upcoming events create trading opportunities or risks',
+        counterfactuals: 'Positive: Major partnerships, upgrades, positive sentiment. Negative: FUD, delays, negative sentiment'
+      },
+      specifications: {
+        timePeriod: 'Last 7-30 days + next 30-90 days (upcoming events)',
+        geographicLocation: 'Global',
+        sectorFocus: ['L1', 'L2', 'DeFi', 'Infrastructure', 'Gaming'],
+        demographicFocus: ['Retail', 'Institutional', 'Developer cohorts'],
+        methodology: ['Event-Driven Analysis', 'Sentiment Analysis', 'Technical/Chart Analysis'],
+        ethics: 'Distinguish between facts, rumors, and speculation. Flag potential misinformation.'
+      },
+      output: {
+        executiveSummary: 'Yes',
+        depth: 'Level 2',
+        contentElements: ['trends', 'players', 'viewpoints', 'predictions', 'alphaSignals'],
+        visualizations: ['Price/Volume charts', 'Sentiment trends', 'Timeline of events'],
+        targetLength: '1,500-2,500 words',
+        citationStyle: 'Inline links'
+      },
+      format: {
+        writingFormat: 'Markdown Report',
+        writingPerspective: 'Third-person'
+      },
+      cryptoModules: {
+        modules: ['newsflow', 'social', 'onChain', 'technical', 'marketStructure']
+      }
+    }
+  },
+  {
+    id: 'comprehensive-risk',
+    name: '🚨 Comprehensive Risk Assessment',
+    description: 'Dedicated risk analysis covering smart contracts, regulatory, market, team, and systemic risks',
+    category: 'risk',
+    formData: {
+      context: {
+        experts: ['Security Auditor', 'Regulatory Counsel', 'On-Chain/Data Engineer', 'Macro Strategist'],
+        purpose: 'Risk memo',
+        actionability: 'Strategic',
+        priorKnowledge: 'Project overview and basic mechanisms',
+        gaps: 'All potential risk vectors: technical, regulatory, market, operational, systemic'
+      },
+      coreQuestion: {
+        primaryQuestion: 'What are ALL the risks associated with this crypto project, quantified and prioritized?',
+        hypothesis: 'Project has identifiable and manageable risks with proper mitigation strategies',
+        counterfactuals: 'Best case: Minimal risks, strong safeguards. Worst case: Critical vulnerabilities, regulatory action, team issues'
+      },
+      specifications: {
+        timePeriod: 'All-time + forward 12 months',
+        geographicLocation: 'Global',
+        sectorFocus: ['DeFi', 'L1', 'L2', 'Infrastructure'],
+        demographicFocus: ['Retail', 'Institutional'],
+        methodology: ['Fundamental Analysis', 'Event-Driven Analysis', 'Sentiment Analysis', 'On-chain Quant Analysis'],
+        ethics: 'FOCUS ON RED FLAGS: Rug pull indicators, centralization, anonymous teams, unaudited code, ponzi mechanics, regulatory violations'
+      },
+      output: {
+        executiveSummary: 'Yes',
+        depth: 'Level 3',
+        contentElements: ['caseStudies', 'implications', 'alphaSignals'],
+        visualizations: [],
+        targetLength: '2,500-4,000 words',
+        citationStyle: 'Inline links'
+      },
+      format: {
+        writingFormat: 'Investment Memo',
+        writingPerspective: 'Third-person'
+      },
+      cryptoModules: {
+        modules: ['security', 'governance', 'tokenomics', 'onChain', 'marketStructure', 'newsflow']
+      }
+    }
   }
 ];
 
@@ -628,10 +757,12 @@ export function getTemplateCategories(): Array<{ value: Template['category']; la
     l1: TEMPLATES.filter(t => t.category === 'l1').length,
     token: TEMPLATES.filter(t => t.category === 'token').length,
     security: TEMPLATES.filter(t => t.category === 'security').length,
-    trading: TEMPLATES.filter(t => t.category === 'trading').length
+    trading: TEMPLATES.filter(t => t.category === 'trading').length,
+    risk: TEMPLATES.filter(t => t.category === 'risk').length
   };
 
   return [
+    { value: 'risk', label: '🚨 Risk Assessment', count: counts.risk },
     { value: 'defi', label: 'DeFi', count: counts.defi },
     { value: 'l1', label: 'Layer 1', count: counts.l1 },
     { value: 'token', label: 'Tokens & Airdrops', count: counts.token },
