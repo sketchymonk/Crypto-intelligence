@@ -3,14 +3,18 @@ import { AIProvider } from '../types';
 import * as claudeService from '../services/claudeService';
 import * as geminiService from '../services/geminiService';
 import * as ollamaService from '../services/ollamaService';
+import { getGuardrailDescription } from '../guardrails';
 
 interface SettingsProps {
   onClose: () => void;
-  onSettingsChange?: () => void;
+  onSettingsChange?: (guardrailsEnabled?: boolean) => void;
+  guardrailsEnabled?: boolean;
+  currentProvider?: AIProvider;
 }
 
-const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange }) => {
-  const [activeTab, setActiveTab] = useState<AIProvider>('claude');
+const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange, guardrailsEnabled = true, currentProvider = 'claude' }) => {
+  const [activeTab, setActiveTab] = useState<AIProvider>(currentProvider);
+  const [localGuardrailsEnabled, setLocalGuardrailsEnabled] = useState(guardrailsEnabled);
 
   // Claude state
   const [claudeApiKey, setClaudeApiKey] = useState('');
@@ -126,6 +130,13 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange }) => {
       showSuccessToast('Ollama configuration reset');
       onSettingsChange?.();
     }
+  };
+
+  const handleGuardrailsToggle = () => {
+    const newValue = !localGuardrailsEnabled;
+    setLocalGuardrailsEnabled(newValue);
+    onSettingsChange?.(newValue);
+    showSuccessToast(`Data guardrails ${newValue ? 'enabled' : 'disabled'}`);
   };
 
   const renderClaudeTab = () => (
@@ -332,6 +343,39 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onSettingsChange }) => {
           >
             Ollama (Local)
           </button>
+        </div>
+
+        {/* Guardrails Section */}
+        <div className="p-6 border-b border-gray-700 bg-gray-850">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-purple-400 mb-2">Data Freshness Guardrails</h3>
+              <p className="text-sm text-gray-400">
+                {getGuardrailDescription(currentProvider)}
+              </p>
+            </div>
+            <button
+              onClick={handleGuardrailsToggle}
+              className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800 ${
+                localGuardrailsEnabled ? 'bg-purple-600' : 'bg-gray-600'
+              }`}
+              role="switch"
+              aria-checked={localGuardrailsEnabled}
+            >
+              <span
+                className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                  localGuardrailsEnabled ? 'translate-x-7' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+          <div className="mt-3 text-xs text-gray-500">
+            {localGuardrailsEnabled ? (
+              <span className="text-green-400">✓ Enabled - AI will be instructed to prioritize fresh data and verify sources</span>
+            ) : (
+              <span className="text-gray-400">Disabled - Standard analysis without special data freshness requirements</span>
+            )}
+          </div>
         </div>
 
         {/* Content */}
