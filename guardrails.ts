@@ -218,14 +218,104 @@ export function generateGuardrailInstructions(provider: AIProvider, enabled: boo
   instructions += `   - Take Profit Targets: [Specific levels]\n`;
   instructions += `   - Time Horizon: [Days/weeks/months]\n`;
   instructions += `   - Catalysts to Watch: [Specific upcoming events with dates]\n\n`;
+
+  instructions += `### PROFESSIONAL FORMATTING REQUIREMENTS\n`;
+  instructions += `**MANDATORY: Use tables and bullet points extensively for maximum readability and professionalism**\n\n`;
+
+  instructions += `**When to Use Tables:**\n`;
+  instructions += `- ✅ Comparing multiple items (competitors, metrics over time, feature comparisons)\n`;
+  instructions += `- ✅ Displaying numerical data (prices, volumes, performance metrics)\n`;
+  instructions += `- ✅ Showing relationships between categories and values\n`;
+  instructions += `- ✅ Presenting time-series data (historical performance, roadmap milestones)\n`;
+  instructions += `- ✅ Feature matrices, risk assessments, scoring rubrics\n\n`;
+
+  instructions += `**Table Formatting Standards:**\n`;
+  instructions += `\`\`\`markdown\n`;
+  instructions += `| Metric | Current Value | 7d Change | 30d Change | Source |\n`;
+  instructions += `|--------|---------------|-----------|------------|--------|\n`;
+  instructions += `| Price | $2.45 | +12.3% | -8.5% | [CoinGecko](url) |\n`;
+  instructions += `| Market Cap | $1.2B | +15.7% | -5.2% | [CMC](url) |\n`;
+  instructions += `| 24h Volume | $145M | +23.1% | +12.4% | [CoinGecko](url) |\n`;
+  instructions += `\`\`\`\n\n`;
+
+  instructions += `**When to Use Bullet Points:**\n`;
+  instructions += `- ✅ Listing features, benefits, or risks\n`;
+  instructions += `- ✅ Breaking down complex concepts into digestible points\n`;
+  instructions += `- ✅ Enumeration of steps, processes, or recommendations\n`;
+  instructions += `- ✅ Key takeaways and highlights\n`;
+  instructions += `- ✅ Pros and cons lists\n\n`;
+
+  instructions += `**Bullet Point Formatting Standards:**\n`;
+  instructions += `- Use **bold** for the main point, then explain:\n`;
+  instructions += `  * **Strong Community Growth**: Discord members increased 45% (12K → 17.4K) in 30 days\n`;
+  instructions += `  * **Institutional Interest**: Grayscale added $8M position (source: 13F filing)\n`;
+  instructions += `- Use sub-bullets (with *, -, or indentation) for supporting details\n`;
+  instructions += `- Keep each point concise (1-2 sentences maximum)\n`;
+  instructions += `- Start with action verbs or key descriptors\n`;
+  instructions += `- Include data/evidence in parentheses or as sub-bullets\n\n`;
+
+  instructions += `**Required Table Uses (Must Include):**\n`;
+  instructions += `1. **Performance Comparison Table** - Show price/volume/metrics across timeframes:\n`;
+  instructions += `   | Timeframe | Price Change | Volume Change | Key Events |\n`;
+  instructions += `   |-----------|--------------|---------------|-----------|\n\n`;
+
+  instructions += `2. **Competitive Analysis Table** - Compare with 3-5 competitors:\n`;
+  instructions += `   | Project | Market Cap | TVL | Users | Key Advantage |\n`;
+  instructions += `   |---------|------------|-----|-------|---------------|\n\n`;
+
+  instructions += `3. **Risk Matrix Table** - Quantify each risk dimension:\n`;
+  instructions += `   | Risk Category | Rating | Impact | Mitigation | Likelihood |\n`;
+  instructions += `   |---------------|--------|--------|------------|------------|\n\n`;
+
+  instructions += `4. **Token Metrics Table** - Key tokenomics data:\n`;
+  instructions += `   | Metric | Value | Notes | Source |\n`;
+  instructions += `   |--------|-------|-------|--------|\n\n`;
+
+  instructions += `**Example: Professional Multi-Table Analysis**\n`;
+  instructions += `\`\`\`markdown\n`;
+  instructions += `## Market Performance Analysis\n\n`;
+
+  instructions += `### Current Metrics (as of 2025-01-15 14:30 UTC)\n\n`;
+
+  instructions += `| Metric | Value | 24h Change | 7d Change | Source |\n`;
+  instructions += `|--------|-------|------------|-----------|--------|\n`;
+  instructions += `| Price | $2.45 | +5.2% 🟢 | -3.1% 🔴 | [CoinGecko](url) |\n`;
+  instructions += `| Market Cap | $1.2B | +4.8% 🟢 | -2.9% 🔴 | [CMC](url) |\n`;
+  instructions += `| 24h Volume | $145M | +23.4% 🟢 | +15.7% 🟢 | [CoinGecko](url) |\n`;
+  instructions += `| Circ. Supply | 489M | - | - | [Etherscan](url) |\n\n`;
+
+  instructions += `### Key Strengths\n`;
+  instructions += `- **Revenue Growth**: Protocol revenue up 127% QoQ ($2.1M → $4.8M)\n`;
+  instructions += `  * Fee revenue: $3.2M (+145%)\n`;
+  instructions += `  * Token burns: $1.6M (+98%)\n`;
+  instructions += `- **User Adoption**: Daily active users increased 34% (45K → 60K)\n`;
+  instructions += `  * Retention rate: 67% (industry avg: 42%)\n`;
+  instructions += `  * Power users (>10 txns/day): +89%\n`;
+  instructions += `- **Partnership Momentum**: 3 major integrations announced\n`;
+  instructions += `  * Chainlink integration (Jan 10) - oracle services\n`;
+  instructions += `  * Aave V3 (Jan 12) - lending integration\n`;
+  instructions += `  * MakerDAO (upcoming Q1) - collateral addition\n\n`;
+
+  instructions += `### Competitive Positioning\n\n`;
+
+  instructions += `| Project | Market Cap | TVL | Daily Users | Unique Feature |\n`;
+  instructions += `|---------|------------|-----|-------------|----------------|\n`;
+  instructions += `| **This Project** | $1.2B | $450M | 60K | Cross-chain native |\n`;
+  instructions += `| Competitor A | $2.1B | $890M | 85K | Established brand |\n`;
+  instructions += `| Competitor B | $890M | $320M | 42K | Low fees |\n`;
+  instructions += `| Competitor C | $1.5B | $510M | 71K | Mobile-first |\n`;
+  instructions += `\`\`\`\n\n`;
+
   instructions += `**Writing Quality Standards:**\n`;
   instructions += `- Use precise numbers with sources, not vague terms\n`;
   instructions += `- Good: "TVL increased 47% from $120M to $176M (DeFiLlama)"\n`;
   instructions += `- Bad: "TVL increased significantly"\n`;
   instructions += `- Be objective - present both positive and negative aspects\n`;
   instructions += `- Use consistent formatting throughout\n`;
+  instructions += `- **ALWAYS use tables for comparisons and numerical data**\n`;
+  instructions += `- **ALWAYS use bullet points for lists and enumerations**\n`;
+  instructions += `- Use emojis sparingly for visual indicators (🟢 🔴 🟡 ⚠️ ✅ ❌)\n`;
   instructions += `- Bold key metrics and conclusions\n`;
-  instructions += `- Use tables/lists for easy scanning\n`;
   instructions += `- Write for decision-making, not just information\n`;
   instructions += `\n---\n`;
 
